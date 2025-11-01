@@ -1,0 +1,11 @@
+# Supabase project configuration
+
+project_id = "pwukaoyoznleilitycpt"
+
+[functions.send-otp]
+# The path should be relative to the 'supabase' folder
+entrypoint = "./functions/send-otp/index.js"
+
+[functions.verify-otp]
+# The path should be relative to the 'supabase' folder
+entrypoint = "./functions/verify-otp/index.js"

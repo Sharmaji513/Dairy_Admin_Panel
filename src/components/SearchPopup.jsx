@@ -38,7 +38,7 @@ export function SearchPopup({ open, onOpenChange, onNavigate }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0">
+      <DialogContent className="max-w-3xl p-0 gap-0">
         <DialogTitle className="sr-only">
           Search Navigation
         </DialogTitle>

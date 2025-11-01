@@ -4,8 +4,14 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { revenueDataMonthly, revenueDataWeekly, revenueDataToday, orderSummaryDataWeekly, orderSummaryDataMonthly, getTotalOrdersCount, getTotalRevenue, getTotalCustomersCount, getAverageOrderValue } from '../lib/mockData';
+import { revenueDataMonthly, revenueDataWeekly, revenueDataToday, orderSummaryDataWeekly, orderSummaryDataMonthly, orders, products } from '../lib/mockData';
 import { DeliveryBoysCard } from '../components/DeliveryBoysCard';
 import { useState } from 'react';
 import { motion } from 'motion/react';
@@ -13,6 +19,67 @@ import { motion } from 'motion/react';
 export function Dashboard() {
   const [revenueView, setRevenueView] = useState('monthly');
   const [orderView, setOrderView] = useState('weekly');
+  const [dateFilter, setDateFilter] = useState('last30');
+
+  // Filter orders based on date filter
+  const getFilteredOrders = () => {
+    const now = new Date('2025-11-01');
+    let startDate = new Date();
+
+    switch (dateFilter) {
+      case 'today':
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'last7':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'last30':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case 'last90':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case 'thisYear':
+        startDate = new Date(now);
+        startDate.setMonth(0, 1);
+        break;
+      default:
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 30);
+    }
+
+    return orders.filter(order => {
+      const orderDate = new Date(order.date);
+      return orderDate >= startDate && orderDate <= now;
+    });
+  };
+
+  const filteredOrders = getFilteredOrders();
+
+  // Calculate stats based on filtered orders
+  const getTotalOrdersCount = () => filteredOrders.length;
+
+  const getTotalRevenue = () => {
+    return filteredOrders
+      .filter(o => o.status === 'completed')
+      .reduce((sum, o) => sum + o.total, 0);
+  };
+
+  const getTotalCustomersCount = () => {
+    const uniqueCustomers = new Set(filteredOrders.map(o => o.customerName));
+    return uniqueCustomers.size;
+  };
+
+  const getAverageOrderValue = () => {
+    const completedOrders = filteredOrders.filter(o => o.status === 'completed');
+    if (completedOrders.length === 0) return 0;
+    const total = completedOrders.reduce((sum, o) => sum + o.total, 0);
+    return Math.round(total / completedOrders.length);
+  };
 
   const getRevenueData = () => {
     switch (revenueView) {
@@ -31,15 +98,47 @@ export function Dashboard() {
     return orderView === 'weekly' ? orderSummaryDataWeekly : orderSummaryDataMonthly;
   };
 
+  const getDateFilterLabel = () => {
+    switch (dateFilter) {
+      case 'today': return 'Today';
+      case 'last7': return 'Last 7 Days';
+      case 'last30': return 'Last 30 Days';
+      case 'last90': return 'Last 90 Days';
+      case 'thisYear': return 'This Year';
+      default: return 'Last 30 Days';
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="transition-all duration-200">
-            <Calendar className="h-4 w-4 mr-2" />
-            Last 30 days
-            <ChevronDown className="h-4 w-4 ml-2" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+                <Calendar className="h-4 w-4" />
+                {getDateFilterLabel()}
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={() => setDateFilter('today')}>
+                Today
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDateFilter('last7')}>
+                Last 7 Days
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDateFilter('last30')}>
+                Last 30 Days
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDateFilter('last90')}>
+                Last 90 Days
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDateFilter('thisYear')}>
+                This Year
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button className="bg-red-500 hover:bg-red-600 transition-all duration-200">
             <Download className="h-4 w-4 mr-2" />
             Export Report
@@ -215,23 +314,18 @@ export function Dashboard() {
                   <th className="text-left py-3 px-4 text-sm text-muted-foreground">Customer</th>
                   <th className="text-left py-3 px-4 text-sm text-muted-foreground">Items</th>
                   <th className="text-left py-3 px-4 text-sm text-muted-foreground">Total</th>
-                  <th className="text-left py-3 px-4 text-sm text-muted-foreground">Time</th>
+                  <th className="text-left py-3 px-4 text-sm text-muted-foreground">Date</th>
                   <th className="text-left py-3 px-4 text-sm text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { id: '1234', customer: 'Rajesh Kumar', items: 5, total: 425, status: 'completed', time: '10:30 AM' },
-                  { id: '1235', customer: 'Priya Sharma', items: 3, total: 285, status: 'completed', time: '11:45 AM' },
-                  { id: '1236', customer: 'Amit Patel', items: 7, total: 670, status: 'pending', time: '12:15 PM' },
-                  { id: '1237', customer: 'Neha Singh', items: 2, total: 190, status: 'completed', time: '01:20 PM' },
-                ].map((order) => {
-                  const initials = order.customer.split(' ').map(n => n[0]).join('');
+                {filteredOrders.slice(0, 4).map((order) => {
+                  const initials = order.customerName.split(' ').map(n => n[0]).join('');
                   return (
                     <tr key={order.id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors duration-200">
                       <td className="py-3 px-4">
                         <span className="text-red-500">#</span>
-                        <span className="text-red-500">{order.id}</span>
+                        <span className="text-red-500">{order.id.split('-')[1]}</span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
@@ -240,18 +334,20 @@ export function Dashboard() {
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{order.customer}</span>
+                          <span>{order.customerName}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4">{order.items}</td>
                       <td className="py-3 px-4">₹{order.total}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{order.time}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{order.date}</td>
                       <td className="py-3 px-4">
                         <Badge
                           variant="secondary"
                           className={order.status === 'completed'
                             ? 'bg-green-50 text-green-700 hover:bg-green-50'
-                            : 'bg-orange-50 text-orange-700 hover:bg-orange-50'}
+                            : order.status === 'pending'
+                              ? 'bg-orange-50 text-orange-700 hover:bg-orange-50'
+                              : 'bg-red-50 text-red-700 hover:bg-red-50'}
                         >
                           {order.status}
                         </Badge>
@@ -267,12 +363,7 @@ export function Dashboard() {
         <Card className="p-6">
           <h3 className="mb-4">Top Products</h3>
           <div className="space-y-4">
-            {[
-              { name: 'Full Cream Milk', sales: 234, change: '+12%' },
-              { name: 'Paneer', sales: 189, change: '+8%' },
-              { name: 'Fresh Curd', sales: 156, change: '+15%' },
-              { name: 'Ghee', sales: 142, change: '+5%' },
-            ].map((product, index) => (
+            {products.slice(0, 4).map((product, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center h-8 w-8 rounded bg-red-50 text-red-600">
@@ -280,10 +371,10 @@ export function Dashboard() {
                   </div>
                   <div>
                     <p className="text-sm">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">{product.sales} sales</p>
+                    <p className="text-xs text-muted-foreground">₹{product.price} / {product.unit}</p>
                   </div>
                 </div>
-                <span className="text-sm text-green-600">{product.change}</span>
+                <span className="text-sm text-green-600">+{Math.floor(Math.random() * 20) + 5}%</span>
               </div>
             ))}
           </div>
@@ -292,30 +383,28 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DeliveryBoysCard />
-       
+
         <Card className="p-6">
           <h3 className="mb-4">Top Selling Products</h3>
           <div className="space-y-4">
-            {[
-              { name: 'Full Cream Milk', orders: 328, revenue: 4920 },
-              { name: 'Paneer', orders: 287, revenue: 5805 },
-              { name: 'Fresh Curd', orders: 245, revenue: 3675 },
-              { name: 'Ghee', orders: 212, revenue: 3180 },
-              { name: 'Toned Milk', orders: 198, revenue: 2970 },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center h-8 w-8 rounded bg-red-50 text-red-600">
-                    {index + 1}
+            {products.slice(0, 5).map((item, index) => {
+              const mockOrders = Math.floor(Math.random() * 300) + 100;
+              const mockRevenue = mockOrders * item.price;
+              return (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded bg-red-50 text-red-600">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{mockOrders} orders</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.orders} orders</p>
-                  </div>
+                  <p>₹{mockRevenue.toLocaleString('en-IN')}</p>
                 </div>
-                <p>₹{item.revenue.toLocaleString('en-IN')}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>

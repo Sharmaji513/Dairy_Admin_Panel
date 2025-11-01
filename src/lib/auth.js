@@ -1,6 +1,14 @@
+// src/lib/auth.js
+
+import { createClient } from '@supabase/supabase-js';
+// Make sure your info file exports supabaseUrl, not projectId
+import { supabaseUrl, publicAnonKey } from '../utils/supabase/info.jsx';
+
+export const supabase = createClient(supabaseUrl, publicAnonKey);
+
 // Simple authentication storage
-export const USERS_STORAGE_KEY = 'dynasty_premium_users';
-export const CURRENT_USER_KEY = 'dynasty_premium_current_user';
+const USERS_STORAGE_KEY = 'dynasty_premium_users';
+const CURRENT_USER_KEY = 'dynasty_premium_current_user';
 
 // Initialize with default admin user
 const initializeUsers = () => {
@@ -30,12 +38,12 @@ export const getAllUsers = () => {
 
 export const registerUser = (email, password, name, phone, role = 'User') => {
   const users = getAllUsers();
-  
+
   // Check if user already exists
   if (users.find(u => u.email === email)) {
     return null;
   }
-  
+
   const newUser = {
     id: Date.now().toString(),
     email,
@@ -45,21 +53,22 @@ export const registerUser = (email, password, name, phone, role = 'User') => {
     role,
     profilePhoto: ''
   };
-  
+
   users.push(newUser);
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
   return newUser;
 };
 
+// This now uses local storage again to match your other functions
 export const loginUser = (email, password) => {
   const users = getAllUsers();
   const user = users.find(u => u.email === email && u.password === password);
-  
+
   if (user) {
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
     return user;
   }
-  
+
   return null;
 };
 
@@ -71,10 +80,10 @@ export const getCurrentUser = () => {
 export const updateCurrentUser = (updates) => {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
-  
+
   const updatedUser = { ...currentUser, ...updates };
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
-  
+
   // Also update in users list
   const users = getAllUsers();
   const index = users.findIndex(u => u.id === currentUser.id);
@@ -99,14 +108,19 @@ export const addUserToSystem = (user) => {
   return newUser;
 };
 
+export const deleteUserFromSystem = (id) => {
+  const users = getAllUsers();
+  const filtered = users.filter(u => u.id !== id);
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(filtered));
+};
+
 export const updateUserInSystem = (id, updates) => {
   const users = getAllUsers();
   const index = users.findIndex(u => u.id === id);
   if (index !== -1) {
     users[index] = { ...users[index], ...updates };
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    
-    // If updating current user, update current user storage too
+
     const currentUser = getCurrentUser();
     if (currentUser && currentUser.id === id) {
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(users[index]));
@@ -114,8 +128,28 @@ export const updateUserInSystem = (id, updates) => {
   }
 };
 
-export const deleteUserFromSystem = (id) => {
+export const isEmailRegistered = (email) => {
   const users = getAllUsers();
-  const filtered = users.filter(u => u.id !== id);
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(filtered));
+  return users.some(u => u.email === email);
+};
+
+// **FIXED:** Added the missing resetUserPassword function
+export const resetUserPassword = (email, newPassword) => {
+  const users = getAllUsers();
+  const userIndex = users.findIndex(u => u.email === email);
+
+  if (userIndex === -1) {
+    return false;
+  }
+
+  users[userIndex].password = newPassword;
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.email === email) {
+    currentUser.password = newPassword;
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+  }
+
+  return true;
 };
