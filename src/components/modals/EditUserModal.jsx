@@ -47,7 +47,7 @@ export function EditUserModal({ open, onClose, onSave, user }) {
       setEmail(user.email);
       setRole(user.role);
       setStatus(user.status);
-      setPermissions(user.permissions || {
+      const initialPermissions = user.permissions || {
         // Core
         dashboard: true,
         settings: false,
@@ -74,7 +74,9 @@ export function EditUserModal({ open, onClose, onSave, user }) {
         integrations: false,
         apiAccess: false,
         security: false,
-      });
+      };
+      setPermissions(initialPermissions);
+      console.log('EditUserModal opened. Initial permissions:', initialPermissions);
     }
   }, [open, user]);
 
@@ -82,9 +84,10 @@ export function EditUserModal({ open, onClose, onSave, user }) {
   // If `checked` is provided use it, otherwise toggle based on previous state.
   const handlePermissionChange = useCallback((key, checked) => {
     setPermissions(prev => {
+      console.log('handlePermissionChange: previous permissions', prev);
       const newValue = typeof checked === 'boolean' ? checked : !prev[key];
       const newPermissions = { ...prev, [key]: newValue };
-      console.log('Setting', key, 'to', newValue);
+      console.log('handlePermissionChange: Setting', key, 'to', newValue, 'New permissions:', newPermissions);
       return newPermissions;
     });
   }, []);
@@ -112,21 +115,7 @@ export function EditUserModal({ open, onClose, onSave, user }) {
     description 
   }) => {
     const isChecked = permissions[permissionKey] === true;
-    
-    // Clicking the label text should toggle the checkbox, but clicking the
-    // checkbox itself is already handled by Radix's onCheckedChange. To
-    // avoid double-toggle we only handle label clicks that did NOT originate
-    // inside the checkbox element (which has data-slot="checkbox").
-    const handleLabelClick = (e) => {
-      try {
-        const clickedInsideCheckbox = e.target.closest('[data-slot="checkbox"]');
-        if (clickedInsideCheckbox) return; // let Radix handle it
-      } catch (err) {
-        // fallback: if any error, don't block the click
-      }
-      // toggle based on current visual state
-      handlePermissionChange(permissionKey, !isChecked);
-    };
+    console.log('PermissionCheckbox:', permissionKey, 'isChecked:', isChecked, 'Current permissions state:', permissions);
     
     return (
       <div className="flex items-start gap-2">
@@ -139,7 +128,6 @@ export function EditUserModal({ open, onClose, onSave, user }) {
         <label
           htmlFor={`edit-permission-${permissionKey}`}
           className="cursor-pointer flex-1 select-none"
-          onClick={handleLabelClick}
         >
           <div className="text-xs font-medium">{title}</div>
           <div className="text-[10px] text-muted-foreground">{description}</div>

@@ -4,7 +4,6 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
-import { Separator } from '../components/ui/separator';
 import { dataStore } from '../lib/dataStore';
 import { showSuccessToast } from '../lib/toast';
 
@@ -52,9 +51,8 @@ export function HelpSupport() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [supportQueries, setSupportQueries] = useState([]);
-  const [selectedQuery, setSelectedQuery] = useState(null);
 
-  // Load support queries from localStorage
+  // Load support queries from localStorage or dataStore
   useEffect(() => {
     const queries = dataStore.loadSupportQueries([
       {
@@ -117,7 +115,7 @@ export function HelpSupport() {
   };
 
   const handleStatusChange = (queryId, newStatus) => {
-    const updatedQueries = supportQueries.map(q => 
+    const updatedQueries = supportQueries.map(q =>
       q.id === queryId ? { ...q, status: newStatus } : q
     );
     setSupportQueries(updatedQueries);
@@ -182,7 +180,7 @@ export function HelpSupport() {
               {filteredFaqs.length} FAQs
             </Badge>
           </div>
-          
+
           {/* Search and Filter */}
           <div className="flex gap-3">
             <Input
@@ -285,10 +283,10 @@ export function HelpSupport() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge 
+                    <Badge
                       variant={query.status === 'pending' ? 'destructive' : 'secondary'}
-                      className={query.status === 'pending' 
-                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-100' 
+                      className={query.status === 'pending'
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-100'
                         : 'bg-green-100 text-green-700 hover:bg-green-100'
                       }
                     >
@@ -316,13 +314,13 @@ export function HelpSupport() {
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       {query.images.map((img, idx) => (
-                        <div 
+                        <div
                           key={idx}
                           className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:scale-105 transition-transform"
                           onClick={() => window.open(img, '_blank')}
                         >
-                          <img 
-                            src={img} 
+                          <img
+                            src={img}
                             alt={`Query attachment ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />
@@ -335,9 +333,8 @@ export function HelpSupport() {
                 <div className="ml-[52px] flex gap-2">
                   {query.status === 'pending' ? (
                     <Button
-                      size="sm"
                       onClick={() => handleStatusChange(query.id, 'resolved')}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="inline-flex items-center justify-center px-3 py-1 rounded text-sm font-medium hover:bg-green-600 bg-green-500 text-white"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Mark as Resolved
