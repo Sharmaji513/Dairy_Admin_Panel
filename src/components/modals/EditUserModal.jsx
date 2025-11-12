@@ -6,17 +6,20 @@ import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { updateUserInSystem } from '../../lib/auth';
+import { updateUserInSystem } from '../../lib/auth'; // Removed AuthUser import
 
-export function EditUserModal({ open, onOpenChange, onSave, user }) {
-  const [formData, setFormData] = useState({
+// Removed EditUserModalProps interface
+// Removed Permission interface
+
+export function EditUserModal({ open, onOpenChange, onSave, user }) { // Removed props type
+  const [formData, setFormData] = useState({ // Removed <Partial<AuthUser>>
     name: '',
     email: '',
     role: 'User',
     status: 'active',
   });
 
-  const [permissions, setPermissions] = useState([
+  const [permissions, setPermissions] = useState([ // Removed <Permission[]>
     // Core section
     { id: 'dashboard', label: 'Dashboard', description: 'Main overview and metrics', checked: false },
     { id: 'products', label: 'Products', description: 'Product management', checked: false },
@@ -25,12 +28,12 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
     { id: 'delivery-staff', label: 'Delivery Staff', description: 'Staff management', checked: false },
     { id: 'membership', label: 'Membership', description: 'Membership tiers', checked: false },
     { id: 'profile', label: 'Profile', description: 'User profile access', checked: false },
-
+    
     // Analytics & Reports section
     { id: 'analytics', label: 'Analytics', description: 'Advanced analytics dashboard', checked: false },
     { id: 'audit-logs', label: 'Audit Logs', description: 'System audit trails', checked: false },
     { id: 'reports', label: 'Reports', description: 'View and generate reports', checked: false },
-
+    
     // Operations section
     { id: 'user-management', label: 'User Management', description: 'Manage users and permissions', checked: false },
     { id: 'wallet', label: 'Wallet', description: 'Wallet management', checked: false },
@@ -38,7 +41,7 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
     { id: 'notifications', label: 'Notifications', description: 'Email and push notifications', checked: false },
     { id: 'content-management', label: 'Content Management', description: 'Content creation and editing', checked: false },
     { id: 'homepage', label: 'Homepage', description: 'Homepage management', checked: false },
-
+    
     // Development section
     { id: 'settings', label: 'Settings', description: 'System configuration', checked: false },
     { id: 'help-support', label: 'Help & Support', description: 'Help and support access', checked: false },
@@ -71,46 +74,46 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
     }
   }, [user, open]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e) => { // Removed : React.FormEvent
     e.preventDefault();
     if (user) {
-      const updatedUser = {
+      const updatedUser = { // Removed : AuthUser
         ...user,
         ...formData,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
+        name: formData.name, // Removed !
+        email: formData.email, // Removed !
+        role: formData.role, // Removed !
         status: formData.status || 'active',
       };
-
+      
       updateUserInSystem(user.id, formData);
       onSave(updatedUser);
       onOpenChange(false);
     }
   };
 
-  const handlePermissionToggle = (id) => {
-    setPermissions(permissions.map(p =>
+  const handlePermissionToggle = (id) => { // Removed : string
+    setPermissions(permissions.map(p => 
       p.id === id ? { ...p, checked: !p.checked } : p
     ));
   };
 
   const categoryPermissions = [
-    {
-      category: 'Core',
-      items: ['dashboard', 'products', 'orders', 'customers', 'delivery-staff', 'membership', 'profile']
+    { 
+      category: 'Core', 
+      items: ['dashboard', 'products', 'orders', 'customers', 'delivery-staff', 'membership', 'profile'] 
     },
-    {
-      category: 'Analytics & Reports',
-      items: ['analytics', 'audit-logs', 'reports']
+    { 
+      category: 'Analytics & Reports', 
+      items: ['analytics', 'audit-logs', 'reports'] 
     },
-    {
-      category: 'Operations',
-      items: ['user-management', 'wallet', 'billing', 'notifications', 'content-management', 'homepage']
+    { 
+      category: 'Operations', 
+      items: ['user-management', 'wallet', 'billing', 'notifications', 'content-management', 'homepage'] 
     },
-    {
-      category: 'Development',
-      items: ['settings', 'help-support', 'integrations', 'api-access', 'security']
+    { 
+      category: 'Development', 
+      items: ['settings', 'help-support', 'integrations', 'api-access', 'security'] 
     },
   ];
 
@@ -121,7 +124,7 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>Edit user information and permissions</DialogDescription>
         </DialogHeader>
-
+        
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <h2 className="text-base font-medium">Edit User</h2>
@@ -206,21 +209,21 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
             {/* Permissions Section */}
             <div className="space-y-3 mt-5">
               <Label className="text-xs font-normal text-red-500">* Permissions & Access</Label>
-
+              
               <div className="space-y-4">
                 {categoryPermissions.map((category, idx) => (
                   <div key={idx} className="space-y-2">
                     {category.category && (
                       <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-700 font-semibold min-w-[180px]">{category.category}</p>
                         <div className="h-px bg-gray-200 flex-1"></div>
-                        <p className="text-xs text-gray-700 font-semibold">{category.category}</p>
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                       {category.items.map((itemId) => {
                         const permission = permissions.find(p => p.id === itemId);
                         if (!permission) return null;
-
+                        
                         return (
                           <div key={permission.id} className="flex items-start gap-2">
                             <Checkbox

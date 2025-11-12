@@ -1,49 +1,56 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { AlertTriangle } from 'lucide-react';
+
+// Removed the 'DeleteConfirmationModalProps' interface
 
 export function DeleteConfirmationModal({
-  open,
-  onOpenChange,
+  isOpen,
+  onClose,
   onConfirm,
-  title, // This prop is passed but not used in the JSX below
-  description = 'This action cannot be undone.', // This prop is also passed but not used
-}) {
+  title,
+  description,
+}) { // Removed the type annotation
   const handleConfirm = () => {
     onConfirm();
-    onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-            <div>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
-                This action cannot be undone. The item will be permanently deleted.
-              </DialogDescription>
-            </div>
-          </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="p-0 gap-0 bg-white rounded-lg shadow-lg w-full max-w-md [&>button]:hidden sm:max-w-md">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-3 mt-6">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-medium mb-2">{title}</h3>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50">
           <Button
+            type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+            onClick={onClose}
+            className="h-9 text-xs px-4"
           >
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleConfirm}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 transition-colors"
+            className="bg-red-500 hover:bg-red-600 h-9 text-xs px-4"
           >
-            OK
+            Delete
           </Button>
         </div>
       </DialogContent>

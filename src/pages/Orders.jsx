@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Edit2, Trash2, Download, Filter, ChevronDown, X, Eye, Calendar, Plus } from 'lucide-react';
+import { Search, Edit2, Trash2, Download, Filter, ChevronDown, X, Eye, Calendar, Plus, Package, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -15,7 +15,6 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { usePersistentOrders } from '../lib/usePersistentData';
-// import { Order } from '../types'; // Removed type import
 import { EditModal } from '../components/modals/EditModal';
 import { EditOrderModal } from '../components/modals/EditOrderModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
@@ -31,7 +30,7 @@ export function Orders() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null); // Removed <Order | null>
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -95,12 +94,12 @@ export function Orders() {
     return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
-  const handleAddOrder = (order) => { // Removed 'Order' type
+  const handleAddOrder = (order) => {
     setOrderList([order, ...orderList]);
     showSuccessToast('Order created successfully!');
   };
 
-  const handleEditOrder = (updatedData) => { // Removed 'Order' type
+  const handleEditOrder = (updatedData) => {
     setOrderList(orderList.map(o => o.id === updatedData.id ? updatedData : o));
     showSuccessToast('Order updated successfully!');
   };
@@ -143,7 +142,7 @@ export function Orders() {
               <h3 className="text-lg">{totalOrders}</h3>
             </div>
             <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center">
-              <span className="text-blue-500">📦</span>
+              <Package className="h-4 w-4 text-blue-500" />
             </div>
           </div>
         </Card>
@@ -154,7 +153,7 @@ export function Orders() {
               <h3 className="text-lg">{completedOrders}</h3>
             </div>
             <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
-              <span className="text-green-500">✓</span>
+              <CheckCircle className="h-4 w-4 text-green-500" />
             </div>
           </div>
         </Card>
@@ -165,7 +164,7 @@ export function Orders() {
               <h3 className="text-lg">{pendingOrders}</h3>
             </div>
             <div className="h-9 w-9 bg-yellow-50 rounded-full flex items-center justify-center">
-              <span className="text-yellow-500">⏱</span>
+              <Clock className="h-4 w-4 text-yellow-500" />
             </div>
           </div>
         </Card>
@@ -176,7 +175,7 @@ export function Orders() {
               <h3 className="text-lg">{cancelledOrders}</h3>
             </div>
             <div className="h-9 w-9 bg-red-50 rounded-full flex items-center justify-center">
-              <span className="text-red-500">✕</span>
+              <XCircle className="h-4 w-4 text-red-500" />
             </div>
           </div>
         </Card>
@@ -278,7 +277,8 @@ export function Orders() {
               size="sm"
               className="transition-all duration-200 h-9 text-xs border border-gray-300"
             >
-              🔄 Refresh
+              <RefreshCw className="h-3 w-3" />
+              Refresh
             </Button>
             <Button 
               variant="outline"
