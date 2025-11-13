@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
-// --- Mock Dependencies (from original file) ---
-// The original file imports these, then immediately re-defines them as mocks.
-// We will keep the mock definitions as they were part of the provided code.
-// import { Button } from "../components/ui/button";
-// import { Card } from "../components/ui/card";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "../components/ui/select";
-// import { Input } from "../components/ui/input";
-// import { Label } from "../components/ui/label";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   BarChart,
   Bar,
@@ -39,18 +37,18 @@ import {
   TrendingUp,
   Package,
 } from "lucide-react";
-// import {
-//   Tabs,
-//   TabsContent,
-//   TabsList,
-//   TabsTrigger,
-// } from "../components/ui/tabs";
-// import {
-//   usePersistentOrders,
-//   usePersistentProducts,
-//   usePersistentCustomers,
-//   usePersistentBranches,
-// } from "../lib/usePersistentData";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import {
+  usePersistentOrders,
+  usePersistentProducts,
+  usePersistentCustomers,
+  usePersistentBranches,
+} from "../lib/usePersistentData";
 
 // --- START: Mock Dependencies ---
 // As the original ../components/ui/ and ../lib/ files are not accessible,
@@ -144,166 +142,27 @@ const sampleBranches = [
 ];
 
 // --- Mock Hooks ---
-const usePersistentOrders = () => [sampleOrders];
-const usePersistentProducts = () => [sampleProducts];
-const usePersistentCustomers = () => [
-  sampleCustomers,
-];
-const usePersistentBranches = () => [
-  sampleBranches,
-];
+
+
+
+
+
 
 // --- Mock UI Components ---
-const Button = React.forwardRef(
-  ({ children, className, variant, size, ...props }, ref) => (
-    <button
-      ref={ref}
-      {...props}
-      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors
-      ${variant === "outline" ? "border border-gray-300 bg-white hover:bg-gray-50" : "bg-blue-600 text-white hover:bg-blue-700"}
-      ${size === "sm" ? "h-9 text-xs" : "h-10"}
-      ${className}`}
-    >
-      {children}
-    </button>
-  ),
-);
-Button.displayName = "Button";
 
-const Card = React.forwardRef(({ children, className, ...props }, ref) => (
-  <div
-    ref={ref}
-    {...props}
-    className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}
-  >
-    {children}
-  </div>
-));
-Card.displayName = "Card";
 
-const Select = ({
-  children,
-  ...props
-}) => <div {...props}>{children}</div>;
-const SelectContent = ({
-  children,
-  ...props
-}) => <div {...props}>{children}</div>;
-const SelectItem = ({
-  children,
-  ...props
-}) => <option {...props}>{children}</option>;
-const SelectTrigger = React.forwardRef(
-  ({ children, className, ...props }, ref) => (
-    <select
-      ref={ref}
-      {...props}
-      className={`border border-gray-300 rounded-md px-3 py-2 ${className}`}
-    >
-      {children}
-    </select>
-  ));
-SelectTrigger.displayName = "SelectTrigger";
 
-const SelectValue = ({
-  placeholder,
-}) => (
-  <option value="" disabled>
-    {placeholder}
-  </option>
-);
 
-const Input = React.forwardRef(({ className, ...props }, ref) => (
-  <input
-    ref={ref}
-    {...props}
-    className={`px-3 py-2 border border-gray-300 rounded-md w-full text-sm ${className}`}
-  />
-));
-Input.displayName = "Input";
 
-const Label = React.forwardRef(({ children, className, ...props }, ref) => (
-  <label
-    ref={ref}
-    {...props}
-    className={`block text-sm font-medium text-gray-700 ${className}`}
-  >
-    {children}
-  </label>
-));
-Label.displayName = "Label";
 
-const Tabs = ({
-  children,
-  value,
-  onValueChange,
-  className,
-}) => {
-  return (
-    <div className={className}>
-      {React.Children.map(children, (child) => {
-        if (
-          React.isValidElement(child) &&
-          (child.type === TabsList ||
-            child.type === TabsContent)
-        ) {
-          return React.cloneElement(
-            child,
-            { activeTab: value, onTabChange: onValueChange },
-          );
-        }
-        return child;
-      })}
-    </div>
-  );
-};
-const TabsList = ({
-  children,
-  className,
-  activeTab,
-  onTabChange,
-}) => (
-  <div className={`flex border-b ${className}`}>
-    {React.Children.map(children, (child) => {
-      if (
-        React.isValidElement(child) &&
-        child.type === TabsTrigger
-      ) {
-        return React.cloneElement(
-          child,
-          {
-            isActive: child.props.value === activeTab,
-            onClick: () => onTabChange?.(child.props.value),
-          },
-        );
-      }
-      return child;
-    })}
-  </div>
-);
-const TabsTrigger = ({
-  children,
-  className,
-  isActive,
-  ...props
-}) => (
-  <button
-    {...props}
-    data-state={isActive ? "active" : "inactive"}
-    className={`px-4 py-2 text-sm font-medium ${isActive ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-500 hover:text-gray-700"} ${className}`}
-  >
-    {children}
-  </button>
-);
-const TabsContent = ({
-  children,
-  value,
-  activeTab,
-  className,
-}) => {
-  if (value !== activeTab) return null;
-  return <div className={className}>{children}</div>;
-};
+
+
+
+
+
+
+
+
 
 // --- END: Mock Dependencies ---
 
@@ -760,6 +619,8 @@ export const Reports = () => {
                 className="w-40 h-9 text-xs border border-gray-300"
               >
                 <SelectValue placeholder="All Membership" />
+              </SelectTrigger>
+              <SelectContent>
                 <SelectItem value="all" className="text-xs">
                   All Membership
                 </SelectItem>
@@ -772,7 +633,7 @@ export const Reports = () => {
                 <SelectItem value="Bronze" className="text-xs">
                   Bronze
                 </SelectItem>
-              </SelectTrigger>
+              </SelectContent>
             </Select>
 
             <Select
@@ -785,6 +646,8 @@ export const Reports = () => {
                 className="w-36 h-9 text-xs border border-gray-300"
               >
                 <SelectValue placeholder="This Year" />
+              </SelectTrigger>
+              <SelectContent>
                 <SelectItem value="today" className="text-xs">
                   Today
                 </SelectItem>
@@ -803,7 +666,7 @@ export const Reports = () => {
                 <SelectItem value="custom" className="text-xs">
                   Custom Range
                 </SelectItem>
-              </SelectTrigger>
+              </SelectContent>
             </Select>
 
             {showCustomRange && (
@@ -1083,8 +946,9 @@ export const Reports = () => {
                     axisLine={{ stroke: "#e0e0e0", strokeWidth: 2, }}
                     domain={[0, "auto"]}
                     ticks={[
-                      0, 200, 400, 600, 800, 1000, 1200, 1400,
-                      1600, 1800,
+                      0, 50, 100, 150, 200, 250, 300, 350,
+                      400, 450, 500, 550, 600, 650, 700, 750,
+                      800, 850, 900, 950, 1000
                     ]}
                     tickFormatter={(value) => `${value}`}
                   />

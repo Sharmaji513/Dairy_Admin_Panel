@@ -22,10 +22,8 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { usePersistentCustomers } from '../lib/usePersistentData';
-// import { Customer } from '../types'; // Removed type import
 import { EditCustomerModal } from '../components/modals/EditCustomerModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
-import { AddCustomerModal } from '../components/modals/AddCustomerModal';
 import { CustomerDetailsModal } from '../components/modals/CustomerDetailsModal';
 import { showSuccessToast } from '../lib/toast';
 
@@ -36,12 +34,11 @@ export function Customers() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [entriesPerPage, setEntriesPerPage] = useState('10');
-  const [selectedCustomers, setSelectedCustomers] = useState([]); // Removed <string[]>
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null); // Removed <Customer | null>
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   
   // More filter states
@@ -99,14 +96,9 @@ export function Customers() {
     return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
-  const handleEditCustomer = (updatedData) => { // Removed 'Customer' type
+  const handleEditCustomer = (updatedData) => {
     setCustomerList(customerList.map(c => c.id === updatedData.id ? updatedData : c));
     showSuccessToast('Customer updated successfully!');
-  };
-
-  const handleAddCustomer = (customer) => { // Removed 'Partial<Customer>' type
-    setCustomerList([...customerList, customer]); // Removed 'as Customer'
-    showSuccessToast('Customer added successfully!');
   };
 
   const handleDeleteCustomer = () => {
@@ -117,20 +109,20 @@ export function Customers() {
     }
   };
 
-  const toggleCustomerStatus = (customerId) => { // Removed 'string' type
+  const toggleCustomerStatus = (customerId) => {
     const customer = customerList.find(c => c.id === customerId);
     const newStatus = customer?.status === 'active' ? 'inactive' : 'active';
     
     setCustomerList(customerList.map(c => 
       c.id === customerId 
-        ? { ...c, status: newStatus } // Removed 'as 'active' | 'inactive''
+        ? { ...c, status: newStatus }
         : c
     ));
     
     showSuccessToast(`Customer ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
   };
 
-  const handleSelectAll = (checked) => { // Removed 'boolean' type
+  const handleSelectAll = (checked) => {
     if (checked) {
       setSelectedCustomers(filteredCustomers.map(c => c.id));
     } else {
@@ -138,7 +130,7 @@ export function Customers() {
     }
   };
 
-  const handleSelectCustomer = (customerId, checked) => { // Removed 'string' and 'boolean' types
+  const handleSelectCustomer = (customerId, checked) => {
     if (checked) {
       setSelectedCustomers([...selectedCustomers, customerId]);
     } else {
@@ -168,13 +160,6 @@ export function Customers() {
             className="transition-all duration-200 h-9 text-xs bg-red-500 text-white hover:bg-red-600 border border-red-500"
           >
             Export
-          </Button>
-          <Button 
-            size="sm"
-            className="bg-red-500 hover:bg-red-600 transition-all duration-200 h-9 text-xs border border-red-500"
-            onClick={() => setAddModalOpen(true)}
-          >
-            + Add Customer
           </Button>
         </div>
       </div>
@@ -524,13 +509,6 @@ export function Customers() {
           </div>
         </div>
       </div>
-
-      {/* Add Customer Modal */}
-      <AddCustomerModal
-        open={addModalOpen}
-        onOpenChange={setAddModalOpen}
-        onSave={handleAddCustomer}
-      />
 
       {/* Edit Customer Modal */}
       <EditCustomerModal
