@@ -2,22 +2,20 @@ import { AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 
-// Removed the 'DeleteConfirmationModalProps' interface
-
 export function DeleteConfirmationModal({
-  isOpen,
-  onClose,
+  open,          // ✨ CHANGED from isOpen
+  onOpenChange,  // ✨ CHANGED from onClose
   onConfirm,
   title,
   description,
-}) { // Removed the type annotation
+}) {
   const handleConfirm = () => {
     onConfirm();
-    onClose();
+    onOpenChange(false); // Close modal on confirm
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 gap-0 bg-white rounded-lg shadow-lg w-full max-w-md [&>button]:hidden sm:max-w-md">
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
@@ -40,7 +38,7 @@ export function DeleteConfirmationModal({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={() => onOpenChange(false)} // ✨ Close on click
             className="h-9 text-xs px-4"
           >
             Cancel

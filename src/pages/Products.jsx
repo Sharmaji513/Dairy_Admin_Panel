@@ -9,8 +9,8 @@ import { AddProductModal } from '../components/modals/AddProductModal';
 import { EditModal } from '../components/modals/EditModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import { useApiProducts } from '../lib/hooks/useApiProducts'; // API Hook
-import { useDashboardStats } from '../lib/hooks/useDashboardStats'; // Stats Hook
+import { useApiProducts } from '../lib/hooks/useApiProducts';
+import { useDashboardStats } from '../lib/hooks/useDashboardStats';
 import { showSuccessToast } from '../lib/toast';
 import { toast } from 'sonner@2.0.3';
 
@@ -34,7 +34,7 @@ export function Products() {
 
   // --- API Hook for Product List ---
   const {
-    products: rawProducts = [], // Default to empty array
+    products: rawProducts = [], 
     loading: productsLoading,
     error: productsError,
     total: totalProductsApi,
@@ -45,9 +45,6 @@ export function Products() {
     search: searchQuery,
     category: selectedCategory,
     status: selectedStatus,
-    // price: priceFilter, // API filter (if supported)
-    // sortBy: sortBy,     // API sort (if supported)
-    // sortOrder: sortOrder,
     page: 1,
     limit: 50
   });
@@ -58,13 +55,12 @@ export function Products() {
     loading: statsLoading 
   } = useDashboardStats();
 
-  // ✨ FIX 1: Filter out null/undefined items immediately
+  // Filter out null/undefined items
   const validProducts = rawProducts.filter(p => p && typeof p === 'object');
 
-  // ✨ FIX 2: Safe Client-Side Sorting (in case API doesn't sort)
+  // Safe Client-Side Sorting
   const sortedProducts = [...validProducts].sort((a, b) => {
     let compareValue = 0;
-    // Safely access properties with optional chaining and fallbacks
     const nameA = a?.name || '';
     const nameB = b?.name || '';
     const priceA = a?.price || 0;
@@ -88,11 +84,24 @@ export function Products() {
       } catch (err) {
         toast.error(err.message || "Failed to delete product");
       }
+      setDeleteModalOpen(false);
       setSelectedProduct(null);
     }
   };
 
-  // Handle Filter Reset
+  const handleUpdateProduct = async (updatedData) => {
+    if (selectedProduct) {
+      try {
+        await updateProduct(selectedProduct.id, updatedData);
+        showSuccessToast('Product updated successfully!');
+        setEditModalOpen(false); // ✨ CLOSE THE MODAL
+        setSelectedProduct(null); // Clear selection
+      } catch (err) {
+        toast.error(err.message || "Failed to update product");
+      }
+    }
+  };
+
   const handleClearAllFilters = () => {
     setPriceFilter('all');
     setPopularityFilter('all');
@@ -174,20 +183,19 @@ export function Products() {
               />
             </div>
             
-            {/* Category Filter */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-48 border border-gray-300">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="milk">Milk</SelectItem>
-                <SelectItem value="dairy">Dairy</SelectItem>
-                <SelectItem value="beverages">Beverages</SelectItem>
+                <SelectItem value="Dairy">Dairy</SelectItem>
+                <SelectItem value="Beverages">Beverages</SelectItem>
+                <SelectItem value="Cookies">Cookies</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Status Filter */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-40 border border-gray-300">
                 <SelectValue placeholder="All Status" />
@@ -199,7 +207,6 @@ export function Products() {
               </SelectContent>
             </Select>
 
-            {/* More Dropdown */}
             <div className="relative">
               <Button 
                 variant="outline"
@@ -212,7 +219,6 @@ export function Products() {
               </Button>
             </div>
 
-            {/* Add Product Button */}
             <Button 
               className="bg-red-500 hover:bg-red-600 border border-red-500"
               onClick={() => setAddModalOpen(true)}
@@ -294,17 +300,14 @@ export function Products() {
           )}
         </div>
 
-        {/* ✨ --- LOADING & ERROR HANDLING --- ✨ */}
         {productsLoading && <div className="text-center py-12 text-muted-foreground">Loading products...</div>}
         {productsError && <div className="text-center py-12 text-red-500">Error: {productsError}</div>}
         
         {!productsLoading && !productsError && (
           <>
-            {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-              {/* ✨ FIX 3: Map over 'sortedProducts' and guard against null products */}
               {sortedProducts.map((product) => {
-                if (!product) return null; // Extra safety check
+                if (!product) return null;
                 return (
                   <Card key={product.id} className="overflow-hidden transition-all duration-200 hover:shadow-lg">
                     <div className="relative h-48 bg-gray-100">
@@ -374,7 +377,7 @@ export function Products() {
         )}
       </Card>
 
-      {/* Modals */}
+      {/* Add Product Modal */}
       <AddProductModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
@@ -383,22 +386,27 @@ export function Products() {
 
       {selectedProduct && (
         <>
+          {/* ✨ Updated Edit Modal with Dropdown */}
           <EditModal
             open={editModalOpen}
             onOpenChange={(open) => {
               setEditModalOpen(open);
               if (!open) setSelectedProduct(null);
             }}
-            onSave={(updatedData) => updateProduct(selectedProduct.id, updatedData)}
+            onSave={handleUpdateProduct}
             title="Edit Product"
             data={selectedProduct}
             fields={[
               { key: 'name', label: 'Product Name', type: 'text' },
-              { key: 'category', label: 'Category', type: 'text' },
-              { key: 'price', label: 'Price (₹)', type: 'slider', min: 0, max: 1000, step: 5 },
+              { 
+                key: 'category', 
+                label: 'Category', 
+                type: 'select', // ✨ Changed to select
+                options: ['Dairy', 'Beverages', 'Cookies', 'Other'] // ✨ Options added
+              },
+              { key: 'price', label: 'Price (₹)', type: 'text' }, // Changed from slider to text input for cleaner editing
               { key: 'stock', label: 'Stock', type: 'number' },
               { key: 'unit', label: 'Unit', type: 'text' },
-              { key: 'branch', label: 'Branch', type: 'text' },
             ]}
           />
 

@@ -65,7 +65,7 @@ export const productService = {
     if (productData.category) formData.append('category', productData.category);
     if (productData.price) formData.append('price', productData.price);
     if (productData.stock) formData.append('stock', productData.stock);
-    
+    if (productData.unit) formData.append('unit', productData.unit);
     if (productData.imageFile) {
       formData.append('image', productData.imageFile);
     }

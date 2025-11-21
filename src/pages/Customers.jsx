@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Search, Edit2, Trash2, MoreVertical, Users, UserCheck, Repeat, TrendingUp, Mail, Phone, MapPin, Calendar, Filter, ChevronDown, X, Eye, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, X, Eye, Crown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Switch } from '../components/ui/switch';
+import { Switch } from '../components/ui/switch'; // ✨ Restore Switch Import
 import { Checkbox } from '../components/ui/checkbox';
 import {
   Select,
@@ -21,18 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { useApiCustomers } from '../lib/hooks/useApiCustomers'; // API hook for list
-import { useDashboardStats } from '../lib/hooks/useDashboardStats'; // ✨ ADDED for stats
+import { useApiCustomers } from '../lib/hooks/useApiCustomers'; 
+import { useDashboardStats } from '../lib/hooks/useDashboardStats'; 
 import { EditCustomerModal } from '../components/modals/EditCustomerModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
 import { CustomerDetailsModal } from '../components/modals/CustomerDetailsModal';
 import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner@2.0.3'; // ✨ ADDED for errors
+import { toast } from 'sonner@2.0.3'; 
 
 export function Customers() {
-  // ✨ --- ALL useState hooks MUST be declared before any other hooks --- ✨
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [branchFilter, setBranchFilter] = useState('all'); // Not used by hook yet
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [entriesPerPage, setEntriesPerPage] = useState('10');
@@ -43,20 +43,19 @@ export function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   
-  // More filter states
   const [timeFilter, setTimeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
 
-  // ✨ --- API Hook for List (called AFTER state declarations) --- ✨
   const {
     customers: filteredCustomers = [],
     loading,
     error,
-    total: totalCustomersApi = 0, // Total from API
+    total: totalCustomersApi = 0, 
     updateCustomer,
     deleteCustomer,
-    toggleCustomerStatus,
+    toggleCustomerStatus, // ✨ Restore this function
+    refetch, 
   } = useApiCustomers({
     search: searchQuery,
     status: statusFilter,
@@ -64,19 +63,15 @@ export function Customers() {
     time: timeFilter,
     sortBy: sortBy,
     sortOrder: sortOrder,
-    page: 1, // You'll need to add pagination state here later
+    page: 1, 
     limit: parseInt(entriesPerPage)
   });
 
-  // ✨ --- API Hook for Stat Cards --- ✨
   const { 
     stats, 
     loading: statsLoading 
   } = useDashboardStats();
 
-  // ✨ REMOVED all local filtering logic
-
-  // ✨ NEW CRUD functions
   const handleEditCustomer = async (updatedData) => {
     try {
       await updateCustomer(updatedData.id, updatedData);
@@ -98,6 +93,7 @@ export function Customers() {
     }
   };
 
+  // ✨ Restore the Toggle Handler
   const handleToggleStatus = async (customerId) => {
     try {
       await toggleCustomerStatus(customerId);
@@ -123,11 +119,10 @@ export function Customers() {
     }
   };
 
-  // ✨ --- Stat card values now from API hooks --- ✨
   const totalCustomers = statsLoading ? '...' : (stats?.totalCustomers ?? totalCustomersApi ?? 0);
   const activeCustomers = statsLoading ? '...' : (stats?.activeCustomers ?? 'N/A');
-  const returningCustomers = statsLoading ? '...' : (stats?.returningCustomers ?? 'N/A'); // Assuming stats hook provides this
-  const highValueCustomers = statsLoading ? '...' : (stats?.highValueCustomers ?? 'N/A'); // Assuming stats hook provides this
+  const returningCustomers = statsLoading ? '...' : (stats?.returningCustomers ?? 'N/A'); 
+  const highValueCustomers = statsLoading ? '...' : (stats?.highValueCustomers ?? 'N/A'); 
 
 
   return (
@@ -138,6 +133,7 @@ export function Customers() {
             variant="outline"
             size="sm"
             className="transition-all duration-200 h-9 text-xs border border-gray-300"
+            onClick={refetch} 
           >
             🔄 Refresh
           </Button>
@@ -168,7 +164,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Active Customers</p>
-              {/* ✨ FIXED: Uses 'activeCustomers' variable */}
               <h3 className="text-lg">{activeCustomers}</h3>
             </div>
             <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
@@ -180,7 +175,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Returning</p>
-              {/* ✨ FIXED: Uses 'returningCustomers' variable */}
               <h3 className="text-lg">{returningCustomers}</h3>
             </div>
             <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center">
@@ -192,7 +186,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">High-Value</p>
-              {/* ✨ FIXED: Uses 'highValueCustomers' variable */}
               <h3 className="text-lg">{highValueCustomers}</h3>
             </div>
             <div className="h-9 w-9 bg-orange-50 rounded-full flex items-center justify-center">
@@ -204,7 +197,7 @@ export function Customers() {
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-4 border-b space-y-3">
-          {/* Single Row with Search and Filters */}
+          {/* Search and Filters Row */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -253,7 +246,7 @@ export function Customers() {
             </Button>
           </div>
           
-          {/* More Filters Row (shown when More is clicked) */}
+          {/* More Filters Row */}
           {moreDropdownOpen && (
             <div className="flex items-center gap-2 flex-wrap p-3 bg-gray-50 rounded-lg">
               <Select value={timeFilter} onValueChange={setTimeFilter}>
@@ -309,7 +302,6 @@ export function Customers() {
           </div>
         </div>
 
-        {/* ✨ --- LOADING & ERROR HANDLING --- ✨ */}
         {loading && <div className="p-4 text-center">Loading customers...</div>}
         {error && <div className="p-4 text-center text-red-500">Error: {error}</div>}
         {!loading && !error && (
@@ -345,17 +337,15 @@ export function Customers() {
                     </div>
                   </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Enable</TableHead>
+                  <TableHead>Enable</TableHead> {/* ✨ Restore Column Header */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(filteredCustomers || []).slice(0, parseInt(entriesPerPage)).map((customer) => {
-                  // ✨ FIX: Safely handle missing name to prevent .split() crash
                   const customerName = customer.name || "Unknown Customer";
                   const initials = customerName.split(' ').map(n => n[0]).join('').substring(0, 2);
 
-                  // Get membership tier
                   const getMembershipTier = () => {
                     if (customer.membership) return customer.membership;
                     if (customer.totalSpent > 10000) return 'Gold';
@@ -378,7 +368,6 @@ export function Customers() {
                             <span className="text-white text-[10px] font-medium">{initials}</span>
                           </div>
                           <div>
-                            {/* ✨ FIX: Display safe name */}
                             <p className="font-medium">{customerName}</p>
                             {customer.customerType && (
                               <Badge 
@@ -427,22 +416,32 @@ export function Customers() {
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={customer.status === 'active' ? 'default' : 'secondary'}
-                          className={`text-[10px] h-5 ${
-                            customer.status === 'active' 
+                          variant={customer.status === 'active' || customer.status === 'Active' ? 'default' : 'secondary'}
+                          className={`text-[10px] h-5 transition-all duration-200 ${
+                            // Use a robust check for "active" (case-insensitive)
+                            (customer.status || '').toLowerCase() === 'active'
                               ? 'bg-[#e8f5e9] text-[#2e7d32] border-[#2e7d32]/20 hover:bg-[#e8f5e9]' 
                               : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-100'
                           }`}
                         >
-                          {customer.status}
+                          {/* Ensure text is always capitalized and never empty */}
+                          {customer.status ? (customer.status.charAt(0).toUpperCase() + customer.status.slice(1).toLowerCase()) : 'Inactive'}
                         </Badge>
                       </TableCell>
+                      {/* ✨ RESTORED: Switch Column */}
                       <TableCell>
-                        <Switch 
-                          checked={customer.status === 'active'}
-                          onCheckedChange={() => handleToggleStatus(customer.id)} // ✨ WIRED
-                          className="h-5 w-9 data-[state=checked]:bg-blue-500"
-                        />
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                          <Switch 
+                            // Robust check: true if status is 'active' or 'Active'
+                            checked={(customer.status || '').toLowerCase() === 'active'}
+                            
+                            // Directly call handler, stop propagation to prevent row click
+                            onCheckedChange={() => handleToggleStatus(customer.id)}
+                            
+                            // Add explicit styling to ensure the "thumb" (circle) is visible and moves
+                            className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
@@ -450,10 +449,7 @@ export function Customers() {
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0 hover:bg-green-50 hover:text-green-600"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setDetailsModalOpen(true);
-                            }}
+                            onClick={() => navigate(`/customers/${customer.id}`)}
                           >
                             <Eye className="h-3 w-3" />
                           </Button>
@@ -515,7 +511,7 @@ export function Customers() {
       <EditCustomerModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        onSave={handleEditCustomer} // ✨ WIRED
+        onSave={handleEditCustomer} 
         customer={selectedCustomer}
       />
 
@@ -523,7 +519,7 @@ export function Customers() {
       <DeleteConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
-        onConfirm={handleDeleteCustomer} // ✨ WIRED
+        onConfirm={handleDeleteCustomer} 
         title="Delete Customer"
         description={`Are you sure you want to delete ${selectedCustomer?.name}? This action cannot be undone.`}
       />

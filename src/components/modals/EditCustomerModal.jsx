@@ -1,292 +1,197 @@
 import { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, ShoppingBag, DollarSign } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+// ✨ REMOVED 'X' from imports
+import { User, Mail, Phone, Shield, Award } from 'lucide-react';
+import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
-// import { Customer } from '../../types'; // Type import removed
-
-// interface EditCustomerModalProps { ... } // Interface removed
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export function EditCustomerModal({ open, onOpenChange, onSave, customer }) {
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     email: '',
     phone: '',
-    membershipTier: 3,
     status: 'active',
     customerType: 'new',
-    totalOrders: 0,
-    totalSpent: 0,
+    membership: 'Bronze',
   });
 
   useEffect(() => {
     if (customer) {
       setFormData({
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        membershipTier: customer.membershipTier || 3,
-        status: customer.status,
-        customerType: customer.customerType,
-        totalOrders: customer.totalOrders,
-        totalSpent: customer.totalSpent,
+        id: customer.id,
+        name: customer.name || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        status: (customer.status || 'active').toLowerCase(),
+        customerType: customer.customerType || 'new',
+        membership: customer.membership || 'Bronze',
       });
     }
-  }, [customer, open]);
+  }, [customer]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (customer) {
-      const updatedCustomer = {
-        ...customer,
-        ...formData,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        membershipTier: formData.membershipTier,
-        status: formData.status,
-        customerType: formData.customerType,
-        totalOrders: formData.totalOrders,
-        totalSpent: formData.totalSpent,
-      };
-
-      onSave(updatedCustomer);
-      onOpenChange(false);
-    }
+  const handleSubmit = () => {
+    onSave(formData);
+    onOpenChange(false);
   };
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const getMembershipTierName = (tier) => {
-    switch (tier) {
-      case 1: return 'Gold';
-      case 2: return 'Silver';
-      case 3: return 'Bronze';
-      default: return 'Bronze';
-    }
-  };
+  if (!customer && open) return null; 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 gap-0 bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden sm:max-w-3xl">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Edit Customer</DialogTitle>
-          <DialogDescription>Edit customer information and details</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col p-0 gap-0 bg-gray-50">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center">
-              <User className="h-4 w-4 text-blue-500" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium">Edit Customer</h3>
-              <p className="text-xs text-muted-foreground">Update customer information and details</p>
-            </div>
+        <div className="flex items-center justify-between p-6 bg-white border-b">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Edit Customer</h2>
+            <p className="text-sm text-gray-500 mt-1">Update customer details and account settings.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {/* ✨ REMOVED THE CUSTOM 'X' BUTTON HERE. The default one will show. */}
         </div>
 
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <form onSubmit={handleSubmit} id="edit-customer-form">
-            {/* Contact Information */}
-            <div className="mb-4">
-              <h4 className="text-xs font-medium mb-3 text-red-600 flex items-center gap-2">
-                <Mail className="h-3 w-3" />
-                Contact Information
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="name" className="text-xs">Customer Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name || ''}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="Enter customer name"
-                    required
-                    className="text-xs h-9 mt-1"
-                  />
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            
+            {/* Section 1: Personal Information */}
+            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                <User className="h-5 w-5 text-blue-600" /> Personal Information
+              </h3>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                      placeholder="John Doe"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="email" className="text-xs">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                    placeholder="customer@email.com"
-                    required
-                    className="text-xs h-9 mt-1"
-                  />
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                      placeholder="john@example.com"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-3">
-                <Label htmlFor="phone" className="text-xs">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="+91 98765 43210"
-                  required
-                  className="text-xs h-9 mt-1"
-                />
-              </div>
-            </div>
 
-            {/* Customer Details */}
-            <div className="mb-4">
-              <h4 className="text-xs font-medium mb-3 text-red-600 flex items-center gap-2">
-                <User className="h-3 w-3" />
-                Customer Details
-              </h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="membershipTier" className="text-xs">Membership Tier</Label>
-                  <Select 
-                    value={formData.membershipTier?.toString() || '3'} 
-                    onValueChange={(value) => handleChange('membershipTier', parseInt(value))}
-                  >
-                    <SelectTrigger className="text-xs h-9 mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1" className="text-xs">Gold</SelectItem>
-                      <SelectItem value="2" className="text-xs">Silver</SelectItem>
-                      <SelectItem value="3" className="text-xs">Bronze</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="customerType" className="text-xs">Customer Type</Label>
-                  <Select 
-                    value={formData.customerType || 'new'} 
-                    onValueChange={(value) => handleChange('customerType', value)}
-                  >
-                    <SelectTrigger className="text-xs h-9 mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new" className="text-xs">New</SelectItem>
-                      <SelectItem value="returning" className="text-xs">Returning</SelectItem>
-                      <SelectItem value="high-value" className="text-xs">High-Value</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="status" className="text-xs">Status</Label>
-                  <Select 
-                    value={formData.status || 'active'} 
-                    onValueChange={(value) => handleChange('status', value)}
-                  >
-                    <SelectTrigger className="text-xs h-9 mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active" className="text-xs">Active</SelectItem>
-                      <SelectItem value="inactive" className="text-xs">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Orders & Spending */}
-            <div className="mb-4">
-              <h4 className="text-xs font-medium mb-3 text-red-600 flex items-center gap-2">
-                <ShoppingBag className="h-3 w-3" />
-                Orders & Spending
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="totalOrders" className="text-xs">Total Orders</Label>
-                  <Input
-                    id="totalOrders"
-                    type="number"
-                    value={formData.totalOrders || 0}
-                    onChange={(e) => handleChange('totalOrders', parseInt(e.target.value) || 0)}
-                    placeholder="0"
-                    className="text-xs h-9 mt-1"
-                    min="0"
-                  />
+            {/* Section 2: Account Settings */}
+            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                <Shield className="h-5 w-5 text-green-600" /> Account Settings
+              </h3>
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-medium text-gray-700">Account Status</Label>
+                  <Select 
+                    value={formData.status} 
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger id="status" className="bg-gray-50 border-gray-200 focus:bg-white transition-colors">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active" className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500 inline-block mr-2"/> Active
+                      </SelectItem>
+                      <SelectItem value="inactive" className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-gray-400 inline-block mr-2"/> Inactive
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="totalSpent" className="text-xs">Total Spent (₹)</Label>
-                  <Input
-                    id="totalSpent"
-                    type="number"
-                    value={formData.totalSpent || 0}
-                    onChange={(e) => handleChange('totalSpent', parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    className="text-xs h-9 mt-1"
-                    min="0"
-                    step="0.01"
-                  />
+
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-sm font-medium text-gray-700">Customer Type</Label>
+                  <Select 
+                    value={formData.customerType} 
+                    onValueChange={(value) => setFormData({ ...formData, customerType: value })}
+                  >
+                    <SelectTrigger id="type" className="bg-gray-50 border-gray-200 focus:bg-white transition-colors">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="returning">Returning</SelectItem>
+                      <SelectItem value="high-value">High Value</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="membership" className="text-sm font-medium text-gray-700">Membership Tier</Label>
+                  <Select 
+                    value={formData.membership} 
+                    onValueChange={(value) => setFormData({ ...formData, membership: value })}
+                  >
+                    <SelectTrigger id="membership" className="bg-gray-50 border-gray-200 focus:bg-white transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-amber-500" />
+                        <SelectValue placeholder="Select membership" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Gold">Gold</SelectItem>
+                      <SelectItem value="Silver">Silver</SelectItem>
+                      <SelectItem value="Bronze">Bronze</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
 
-            {/* Summary Card */}
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <h4 className="text-xs font-medium mb-2">Customer Summary</h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Membership:</span>
-                  <span className="font-medium">{getMembershipTierName(formData.membershipTier || 3)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Type:</span>
-                  <span className="font-medium capitalize">{formData.customerType}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Orders:</span>
-                  <span className="font-medium">{formData.totalOrders}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Spent:</span>
-                  <span className="font-medium">₹{formData.totalSpent?.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </form>
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t shrink-0">
+        {/* Footer Action Bar */}
+        <div className="p-4 border-t bg-white flex justify-end gap-3">
           <Button
-            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="text-xs h-9"
+            className="h-11 px-6 text-base font-medium border-gray-300"
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="edit-customer-form"
-            className="bg-red-500 hover:bg-red-600 text-xs h-9"
+          <Button 
+            onClick={handleSubmit}
+            className="h-11 px-8 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           >
             Save Changes
           </Button>
         </div>
+
       </DialogContent>
     </Dialog>
   );

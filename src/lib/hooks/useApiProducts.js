@@ -34,16 +34,29 @@ export function useApiProducts(filters) {
     setError(null);
 
     try {
-      // ✨ FIX: Clean the filters before sending to API
       const activeFilters = cleanFilters(filters);
-      
       const response = await productService.getProducts(activeFilters);
-      
-      // Handle different response structures
-      const productsList = response.products || (response.data && response.data.products) || [];
-      const totalCount = response.total || (response.data && response.data.total) || productsList.length || 0;
 
-      setProducts(productsList);
+      // Handle different response structures
+      const rawProducts = response.products || (response.data && response.data.products) || [];
+      
+      // ✨ KEY FIX: Map backend fields to frontend fields
+      const mappedProducts = rawProducts.map(p => ({
+        ...p,
+        
+        // 1. Map MongoDB '_id' to 'id'
+        id: p._id || p.id, 
+        
+        // 2. Map 'dishName' to 'name'
+        name: p.dishName || p.name || 'Unknown Product',
+        
+        // 3. Handle Image URL
+        image: p.image ? (p.image.startsWith('http') ? p.image : `https://dynasty-premium-backend.onrender.com${p.image}`) : null
+      }));
+
+      const totalCount = response.total || (response.data && response.data.total) || mappedProducts.length || 0;
+
+      setProducts(mappedProducts);
       setTotal(totalCount);
 
     } catch (err) {

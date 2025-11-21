@@ -4,88 +4,99 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Slider } from '../ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'; // ✨ Added Imports
 
-// The 'EditModalProps' interface is removed as it's TypeScript-specific.
-
-// We remove the generic <T> and the type annotations
 export function EditModal({
   open,
   onOpenChange,
   onSave,
-  data,
   title,
+  data,
   fields,
 }) {
-  const [formData, setFormData] = useState(data); // Removed <T>
+  const [formData, setFormData] = useState(data || {});
 
   useEffect(() => {
-    setFormData(data);
+    if (data) {
+      setFormData(data);
+    }
   }, [data]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
     onSave(formData);
-    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="sr-only">Edit item details</DialogDescription>
+          <DialogDescription>
+            Make changes to the item here. Click save when you're done.
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           {fields.map((field) => (
-            <div key={String(field.key)} className="space-y-2">
-              <Label>{field.label}</Label>
+            <div key={field.key} className="grid gap-2">
+              <Label htmlFor={field.key}>{field.label}</Label>
+              
+              {/* ✨ Handle Slider Inputs */}
               {field.type === 'slider' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{field.min || 0}</span>
-                    <span className="font-medium">{formData[field.key]}</span>
-                    <span className="text-xs text-muted-foreground">{field.max || 100}</span>
-                  </div>
+                <div className="flex items-center gap-4">
                   <Slider
-                    value={[formData[field.key]]} // Removed 'as number'
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, [field.key]: value[0] }) // Removed 'as any'
-                    }
-                    min={field.min || 0}
-                    max={field.max || 100}
-                    step={field.step || 1}
-                    disabled={field.disabled}
+                    value={[Number(formData[field.key]) || 0]}
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    onValueChange={([value]) => setFormData({ ...formData, [field.key]: value })}
+                    className="flex-1"
                   />
+                  <span className="w-12 text-sm text-right">{formData[field.key]}</span>
                 </div>
+              ) : field.type === 'select' ? ( 
+                /* ✨ Handle Select/Dropdown Inputs (NEW) */
+                <Select 
+                  value={formData[field.key]} 
+                  onValueChange={(value) => setFormData({ ...formData, [field.key]: value })}
+                >
+                  <SelectTrigger id={field.key}>
+                    <SelectValue placeholder={`Select ${field.label}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options?.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
+                /* ✨ Handle Standard Text/Number Inputs */
                 <Input
-                  type={field.type || 'text'}
-                  value={formData[field.key]} // Removed 'as string'
+                  id={field.key}
+                  type={field.type}
+                  value={formData[field.key] || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, [field.key]: e.target.value })
+                    setFormData({
+                      ...formData,
+                      [field.key]:
+                        field.type === 'number'
+                          ? parseFloat(e.target.value)
+                          : e.target.value,
+                    })
                   }
-                  disabled={field.disabled}
                 />
               )}
             </div>
           ))}
-        </div>
-
-        <div className="flex gap-3 mt-6">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
-          >
-            Save Changes
-          </Button>
-        </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Save changes</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

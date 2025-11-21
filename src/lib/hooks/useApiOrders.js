@@ -2,25 +2,36 @@
 import { useState, useEffect } from 'react';
 import { orderService } from '../api/services/orderService';
 import { API_CONFIG } from '../api/config';
-import { usePersistentOrders } from '../usePersistentData';
+import { orders as defaultOrders } from '../mockData'; // Using mockData directly for fallback
 
-/**
- * Hook for managing orders with API integration
- * Falls back to localStorage when API is disabled
- */
 export function useApiOrders(filters) {
-  const [localOrders, setLocalOrders] = usePersistentOrders();
+  // Initialize with empty array to prevent "length of undefined" errors
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
 
+  // Helper to clean filters (Remove 'all' and empty strings)
+  const cleanFilters = (dirtyFilters) => {
+    const cleaned = {};
+    if (!dirtyFilters) return cleaned;
+    
+    Object.keys(dirtyFilters).forEach((key) => {
+      const value = dirtyFilters[key];
+      // Only include the filter if it's NOT 'all' and NOT empty
+      if (value !== 'all' && value !== '' && value !== null && value !== undefined) {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  };
+
   // Fetch orders from API
   const fetchOrders = async () => {
     if (!API_CONFIG.ENABLE_API) {
       // Use local data when API is disabled
-      setOrders(localOrders);
-      setTotal(localOrders.length);
+      setOrders(defaultOrders);
+      setTotal(defaultOrders.length);
       return;
     }
 
@@ -28,15 +39,32 @@ export function useApiOrders(filters) {
     setError(null);
 
     try {
-      const response = await orderService.getOrders(filters);
-      setOrders(response.data.orders || []);
-      setTotal(response.data.total || 0);
+      // ✨ FIX 1: Clean filters before sending
+      const activeFilters = cleanFilters(filters);
+
+      const response = await orderService.getOrders(activeFilters);
+      
+      // ✨ DEBUG: Check what the API actually sends
+      console.log("Orders API Response:", response);
+
+      // ✨ FIX 2: Handle both 'flat' and 'nested' response structures
+      const ordersList = response.orders || (response.data && response.data.orders) || [];
+      
+      // ✨ FIX 3: Map backend _id to frontend id and ensure it's an array
+      const mappedOrders = Array.isArray(ordersList) ? ordersList.map(order => ({
+        ...order,
+        id: order._id || order.id
+      })) : [];
+
+      const totalCount = response.total || (response.data && response.data.total) || mappedOrders.length || 0;
+
+      setOrders(mappedOrders);
+      setTotal(totalCount);
+
     } catch (err) {
       setError(err.message || 'Failed to fetch orders');
       console.error('Error fetching orders:', err);
-      // Fallback to local data on error
-      setOrders(localOrders);
-      setTotal(localOrders.length);
+      setOrders([]); // Safety fallback
     } finally {
       setLoading(false);
     }
@@ -44,22 +72,12 @@ export function useApiOrders(filters) {
 
   // Create order
   const createOrder = async (order) => {
-    if (!API_CONFIG.ENABLE_API) {
-      const newOrder = { ...order, id: Date.now().toString() };
-      setLocalOrders([...localOrders, newOrder]);
-      setOrders([...orders, newOrder]);
-      return { success: true, data: newOrder };
-    }
-
     setLoading(true);
-    setError(null);
-
     try {
       const response = await orderService.createOrder(order);
       await fetchOrders(); // Refresh list
       return response;
-    } catch (err)
- {
+    } catch (err) {
       setError(err.message || 'Failed to create order');
       throw err;
     } finally {
@@ -69,16 +87,7 @@ export function useApiOrders(filters) {
 
   // Update order
   const updateOrder = async (id, order) => {
-    if (!API_CONFIG.ENABLE_API) {
-      const updated = localOrders.map(o => o.id === id ? { ...o, ...order } : o);
-      setLocalOrders(updated);
-      setOrders(updated);
-      return { success: true, data: order };
-    }
-
     setLoading(true);
-    setError(null);
-
     try {
       const response = await orderService.updateOrder(id, order);
       await fetchOrders(); // Refresh list
@@ -93,16 +102,7 @@ export function useApiOrders(filters) {
 
   // Delete order
   const deleteOrder = async (id) => {
-    if (!API_CONFIG.ENABLE_API) {
-      const filtered = localOrders.filter(o => o.id !== id);
-      setLocalOrders(filtered);
-      setOrders(filtered);
-      return { success: true };
-    }
-
     setLoading(true);
-    setError(null);
-
     try {
       const response = await orderService.deleteOrder(id);
       await fetchOrders(); // Refresh list
@@ -117,15 +117,7 @@ export function useApiOrders(filters) {
   
   // Update order status
   const updateOrderStatus = async (id, status) => {
-     if (!API_CONFIG.ENABLE_API) {
-      const updated = localOrders.map(o => o.id === id ? { ...o, status } : o);
-      setLocalOrders(updated);
-      setOrders(updated);
-      return { success: true };
-    }
-    
     setLoading(true);
-    setError(null);
     try {
       const response = await orderService.updateOrderStatus(id, status);
       await fetchOrders(); // Refresh list
