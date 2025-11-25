@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, X, Eye, Crown } from 'lucide-react';
+import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, Eye, Crown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Switch } from '../components/ui/switch'; // ✨ Restore Switch Import
 import { Checkbox } from '../components/ui/checkbox';
 import {
   Select,
@@ -29,6 +27,7 @@ import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmation
 import { CustomerDetailsModal } from '../components/modals/CustomerDetailsModal';
 import { showSuccessToast } from '../lib/toast';
 import { toast } from 'sonner@2.0.3'; 
+import { useNavigate } from 'react-router-dom';
 
 export function Customers() {
   const navigate = useNavigate();
@@ -54,7 +53,7 @@ export function Customers() {
     total: totalCustomersApi = 0, 
     updateCustomer,
     deleteCustomer,
-    toggleCustomerStatus, // ✨ Restore this function
+    toggleCustomerStatus, 
     refetch, 
   } = useApiCustomers({
     search: searchQuery,
@@ -93,7 +92,6 @@ export function Customers() {
     }
   };
 
-  // ✨ Restore the Toggle Handler
   const handleToggleStatus = async (customerId) => {
     try {
       await toggleCustomerStatus(customerId);
@@ -119,10 +117,23 @@ export function Customers() {
     }
   };
 
-  const totalCustomers = statsLoading ? '...' : (stats?.totalCustomers ?? totalCustomersApi ?? 0);
-  const activeCustomers = statsLoading ? '...' : (stats?.activeCustomers ?? 'N/A');
-  const returningCustomers = statsLoading ? '...' : (stats?.returningCustomers ?? 'N/A'); 
-  const highValueCustomers = statsLoading ? '...' : (stats?.highValueCustomers ?? 'N/A'); 
+  // ✨ FIX: Calculate stats locally from the list, IGNORING the API stats for now
+  const totalCustomersCount = filteredCustomers.length;
+  
+  const activeCustomersCount = filteredCustomers.filter(c => {
+    const status = (c.status || '').toLowerCase();
+    return status === 'active';
+  }).length;
+
+  const returningCustomersCount = filteredCustomers.filter(c => {
+    const type = (c.customerType || '').toLowerCase();
+    return type === 'returning';
+  }).length;
+
+  const highValueCustomersCount = filteredCustomers.filter(c => {
+    const type = (c.customerType || '').toLowerCase();
+    return type === 'high-value';
+  }).length;
 
 
   return (
@@ -153,7 +164,7 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Total Customers</p>
-              <h3 className="text-lg">{totalCustomers}</h3>
+              <h3 className="text-lg">{loading ? '...' : totalCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center">
               <Users className="h-4 w-4 text-blue-500" />
@@ -164,7 +175,8 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Active Customers</p>
-              <h3 className="text-lg">{activeCustomers}</h3>
+              {/* ✨ USE LOCAL COUNT */}
+              <h3 className="text-lg">{loading ? '...' : activeCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
               <UserCheck className="h-4 w-4 text-green-500" />
@@ -175,7 +187,8 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Returning</p>
-              <h3 className="text-lg">{returningCustomers}</h3>
+              {/* ✨ USE LOCAL COUNT */}
+              <h3 className="text-lg">{loading ? '...' : returningCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center">
               <Repeat className="h-4 w-4 text-purple-500" />
@@ -186,7 +199,8 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">High-Value</p>
-              <h3 className="text-lg">{highValueCustomers}</h3>
+              {/* ✨ USE LOCAL COUNT */}
+              <h3 className="text-lg">{loading ? '...' : highValueCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-orange-50 rounded-full flex items-center justify-center">
               <TrendingUp className="h-4 w-4 text-orange-500" />
@@ -217,8 +231,6 @@ export function Customers() {
                 <SelectItem value="all" className="text-xs">All Status</SelectItem>
                 <SelectItem value="active" className="text-xs">Active</SelectItem>
                 <SelectItem value="inactive" className="text-xs">Inactive</SelectItem>
-                <SelectItem value="frequent" className="text-xs">Frequent (20+ orders)</SelectItem>
-                <SelectItem value="occasional" className="text-xs">Occasional (&lt;10 orders)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -246,7 +258,6 @@ export function Customers() {
             </Button>
           </div>
           
-          {/* More Filters Row */}
           {moreDropdownOpen && (
             <div className="flex items-center gap-2 flex-wrap p-3 bg-gray-50 rounded-lg">
               <Select value={timeFilter} onValueChange={setTimeFilter}>
@@ -337,8 +348,8 @@ export function Customers() {
                     </div>
                   </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Enable</TableHead> {/* ✨ Restore Column Header */}
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Action</TableHead> 
+                  <TableHead className="text-right">Manage</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,6 +365,9 @@ export function Customers() {
                   };
                   const membershipTier = getMembershipTier();
                   
+                  // Robust Status Check
+                  const isActive = (customer.status || '').toLowerCase() === 'active';
+
                   return (
                     <TableRow key={customer.id} className="hover:bg-gray-50 transition-colors duration-200 text-xs">
                       <TableCell>
@@ -416,33 +430,46 @@ export function Customers() {
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={customer.status === 'active' || customer.status === 'Active' ? 'default' : 'secondary'}
-                          className={`text-[10px] h-5 transition-all duration-200 ${
-                            // Use a robust check for "active" (case-insensitive)
-                            (customer.status || '').toLowerCase() === 'active'
+                          variant={isActive ? 'default' : 'secondary'}
+                          className={`text-[10px] h-5 ${
+                            isActive
                               ? 'bg-[#e8f5e9] text-[#2e7d32] border-[#2e7d32]/20 hover:bg-[#e8f5e9]' 
                               : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-100'
                           }`}
                         >
-                          {/* Ensure text is always capitalized and never empty */}
-                          {customer.status ? (customer.status.charAt(0).toUpperCase() + customer.status.slice(1).toLowerCase()) : 'Inactive'}
+                          {isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
-                      {/* ✨ RESTORED: Switch Column */}
+
+                      {/* ✨ RESTORED: White Button with Colored Border & Dot */}
                       <TableCell>
-                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                          <Switch 
-                            // Robust check: true if status is 'active' or 'Active'
-                            checked={(customer.status || '').toLowerCase() === 'active'}
-                            
-                            // Directly call handler, stop propagation to prevent row click
-                            onCheckedChange={() => handleToggleStatus(customer.id)}
-                            
-                            // Add explicit styling to ensure the "thumb" (circle) is visible and moves
-                            className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
-                          />
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleStatus(customer.id);
+                          }}
+                          className={`
+                            flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-semibold transition-colors
+                            ${isActive 
+                              ? 'bg-white border-green-500 text-green-600 hover:bg-green-50' 
+                              : 'bg-white border-red-500 text-red-600 hover:bg-red-50'
+                            }
+                          `}
+                        >
+                          {isActive ? (
+                            <>
+                              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                              Enabled
+                            </>
+                          ) : (
+                            <>
+                              <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                              Disabled
+                            </>
+                          )}
+                        </button>
                       </TableCell>
+
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -483,7 +510,6 @@ export function Customers() {
               </TableBody>
             </Table>
 
-            {/* Pagination */}
             <div className="p-4 border-t flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
                 Showing {Math.min(filteredCustomers.length, parseInt(entriesPerPage))} of {totalCustomersApi} entries
@@ -511,7 +537,7 @@ export function Customers() {
       <EditCustomerModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        onSave={handleEditCustomer} 
+        onSave={handleEditCustomer}
         customer={selectedCustomer}
       />
 
@@ -519,7 +545,7 @@ export function Customers() {
       <DeleteConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
-        onConfirm={handleDeleteCustomer} 
+        onConfirm={handleDeleteCustomer}
         title="Delete Customer"
         description={`Are you sure you want to delete ${selectedCustomer?.name}? This action cannot be undone.`}
       />

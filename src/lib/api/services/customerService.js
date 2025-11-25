@@ -53,9 +53,14 @@ export const customerService = {
   /**
    * Toggle customer status (active/inactive)
    */
-  async toggleCustomerStatus(id) {
+  async toggleCustomerStatus(id, currentStatus) {
+    // Determine the new status we want
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    
+    // Send it explicitly in the body
     return apiClient.patch(
-      buildUrl(API_ENDPOINTS.CUSTOMERS.TOGGLE_STATUS, { id })
+      buildUrl(API_ENDPOINTS.CUSTOMERS.TOGGLE_STATUS, { id }),
+      { status: newStatus }
     );
   },
 };

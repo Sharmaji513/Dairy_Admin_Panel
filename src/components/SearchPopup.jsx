@@ -1,17 +1,22 @@
-import { X, Home, Package, ShoppingCart, Users, UserCog, Bike, Wallet, Crown, Layout, Settings, User, HelpCircle } from 'lucide-react';
+import { X, Home, Package, ShoppingCart, Users, UserCog, Bike, Wallet, Crown, Layout, Settings, User, HelpCircle, FolderOpen, BarChart3, Bell } from 'lucide-react'; // ✨ Added BarChart3, Bell
 import { Input } from './ui/input';
 import { useState } from 'react';
 
 const searchOptions = [
   { id: 'dashboard', label: 'Dashboard', description: 'Main overview and metrics', icon: Home, page: 'dashboard' },
   { id: 'products', label: 'Products', description: 'Manage products', icon: Package, page: 'products' },
+  { id: 'category-management', label: 'Category Management', description: 'Manage product categories', icon: FolderOpen, page: 'category-management' },
   { id: 'orders', label: 'Orders', description: 'View all orders', icon: ShoppingCart, page: 'orders' },
-  { id: 'user-management', label: 'User Management', description: 'Manage users and permissions', icon: UserCog, page: 'user-management' },
   { id: 'customers', label: 'Customers', description: 'Customer list', icon: Users, page: 'customers' },
   { id: 'delivery-staff', label: 'Delivery Staff', description: 'Manage delivery team', icon: Bike, page: 'delivery-staff' },
+  { id: 'user-management', label: 'User Management', description: 'Manage users and permissions', icon: UserCog, page: 'user-management' },
   { id: 'wallet', label: 'Wallet', description: 'Wallet management', icon: Wallet, page: 'wallet' },
   { id: 'membership', label: 'Membership', description: 'Membership tiers', icon: Crown, page: 'membership' },
-  { id: 'homepage', label: 'Homepage', description: 'Homepage management', icon: Layout, page: 'homepage' },
+  // ✨ Added Reports
+  { id: 'reports', label: 'Reports', description: 'Sales and analytics', icon: BarChart3, page: 'reports' },
+  { id: 'homepage', label: 'Homepage', description: 'Homepage management', icon: Layout, page: 'home-page' },
+  // ✨ Added Notifications
+  { id: 'notifications', label: 'Push Notifications', description: 'Manage push notifications', icon: Bell, page: 'notifications' },
   { id: 'settings', label: 'Settings', description: 'App settings', icon: Settings, page: 'updated-settings' },
   { id: 'profile', label: 'Profile', description: 'User profile access', icon: User, page: 'profile' },
   { id: 'help-support', label: 'Help and Support', description: 'Get help', icon: HelpCircle, page: 'help-support' },

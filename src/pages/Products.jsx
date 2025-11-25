@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Plus, Filter, Edit2, Trash2, Package, CheckCircle, TrendingUp, Star, X, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -13,9 +13,9 @@ import { useApiProducts } from '../lib/hooks/useApiProducts';
 import { useDashboardStats } from '../lib/hooks/useDashboardStats';
 import { showSuccessToast } from '../lib/toast';
 import { toast } from 'sonner@2.0.3';
+import { useApiCategories } from '../lib/hooks/useApiCategories'; // ✨ Import this
 
 export function Products() {
-  // Filter states
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,13 +26,23 @@ export function Products() {
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   
-  // Modal states
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // --- API Hook for Product List ---
+  // ✨ 1. Fetch Categories
+  const { categories, refetch: refetchCategories } = useApiCategories();
+
+  // ✨ 2. Create Map for filtering (ID -> Name)
+  const categoryMap = useMemo(() => {
+    const map = {};
+    categories.forEach(cat => {
+      map[cat._id || cat.id] = (cat.name || '').toLowerCase();
+    });
+    return map;
+  }, [categories]);
+
   const {
     products: rawProducts = [], 
     loading: productsLoading,
@@ -49,33 +59,61 @@ export function Products() {
     limit: 50
   });
 
-  // --- API Hook for Stat Cards ---
   const { 
     stats, 
     loading: statsLoading 
   } = useDashboardStats();
 
-  // Filter out null/undefined items
+  // Calculate 'Available' locally
+  const availableProducts = rawProducts.filter(p => (p.stock || 0) > 0).length;
+
+  // Use global stats for others
+  const totalProducts = statsLoading ? '...' : (stats?.totalProducts ?? totalProductsApi ?? 0);
+  const todaysRevenue = statsLoading ? '...' : (stats?.todaysRevenue?.toLocaleString() ?? 'N/A');
+  const avgRating = statsLoading ? '...' : (stats?.avgRating ?? 'N/A');
+
+  // Filter Logic
   const validProducts = rawProducts.filter(p => p && typeof p === 'object');
 
-  // Safe Client-Side Sorting
-  const sortedProducts = [...validProducts].sort((a, b) => {
+  const filteredProducts = validProducts.filter(product => {
+    const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // ✨ 3. Fix Category Filtering
+    const categoryId = product.category;
+    const productCatName = categoryMap[categoryId] || (typeof categoryId === 'string' ? categoryId.toLowerCase() : '');
+    const filterCatName = selectedCategory.toLowerCase();
+    
+    const matchesCategory = selectedCategory === 'all' || productCatName === filterCatName;
+
+    let matchesStatus = true;
+    if (selectedStatus === 'instock') matchesStatus = (product.stock || 0) > 0;
+    else if (selectedStatus === 'outofstock') matchesStatus = (product.stock || 0) <= 0;
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     let compareValue = 0;
     const nameA = a?.name || '';
     const nameB = b?.name || '';
-    const priceA = a?.price || 0;
-    const priceB = b?.price || 0;
-    const stockA = a?.stock || 0;
-    const stockB = b?.stock || 0;
-
     if (sortBy === 'name') compareValue = nameA.localeCompare(nameB);
-    else if (sortBy === 'price') compareValue = priceA - priceB;
-    else if (sortBy === 'stock') compareValue = stockA - stockB;
     
     return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
-  // Handle Delete
+  const handleUpdateProduct = async (updatedData) => {
+    if (selectedProduct) {
+      try {
+        await updateProduct(selectedProduct.id, updatedData);
+        showSuccessToast('Product updated successfully!');
+        setEditModalOpen(false);
+        setSelectedProduct(null);
+      } catch (err) {
+        toast.error(err.message || "Failed to update product");
+      }
+    }
+  };
+
   const handleDeleteProduct = async () => {
     if (selectedProduct) {
       try {
@@ -86,19 +124,6 @@ export function Products() {
       }
       setDeleteModalOpen(false);
       setSelectedProduct(null);
-    }
-  };
-
-  const handleUpdateProduct = async (updatedData) => {
-    if (selectedProduct) {
-      try {
-        await updateProduct(selectedProduct.id, updatedData);
-        showSuccessToast('Product updated successfully!');
-        setEditModalOpen(false); // ✨ CLOSE THE MODAL
-        setSelectedProduct(null); // Clear selection
-      } catch (err) {
-        toast.error(err.message || "Failed to update product");
-      }
     }
   };
 
@@ -113,15 +138,9 @@ export function Products() {
     setSearchQuery('');
   };
 
-  // Stat card values
-  const totalProducts = statsLoading ? '...' : (stats?.totalProducts ?? totalProductsApi ?? 0);
-  const availableProducts = statsLoading ? '...' : (stats?.availableProducts ?? 'N/A');
-  const todaysRevenue = statsLoading ? '...' : (stats?.todaysRevenue?.toLocaleString() ?? 'N/A');
-  const avgRating = statsLoading ? '...' : (stats?.avgRating ?? 'N/A');
-
   return (
     <div className="p-4">
-      {/* Statistics Cards */}
+      {/* Statistics Cards (Same as before) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <Card className="p-4 transition-all duration-200 hover:shadow-md">
           <div className="flex items-start justify-between">
@@ -171,7 +190,6 @@ export function Products() {
 
       <Card className="p-6">
         <div className="space-y-4">
-          {/* Search and Controls Row */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -183,16 +201,18 @@ export function Products() {
               />
             </div>
             
+            {/* ✨ Category Filter Dropdown */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-48 border border-gray-300">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Dairy">Dairy</SelectItem>
-                <SelectItem value="Beverages">Beverages</SelectItem>
-                <SelectItem value="Cookies">Cookies</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat._id || cat.id} value={cat.name}>
+                    {cat.displayName || cat.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -308,6 +328,9 @@ export function Products() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
               {sortedProducts.map((product) => {
                 if (!product) return null;
+                // ✨ Resolve category name
+                const categoryName = categoryMap[product.category] || 'Uncategorized';
+
                 return (
                   <Card key={product.id} className="overflow-hidden transition-all duration-200 hover:shadow-lg">
                     <div className="relative h-48 bg-gray-100">
@@ -328,7 +351,8 @@ export function Products() {
                     </div>
                     <div className="p-4">
                       <h3 className="font-medium mb-1">{product.name || 'Unknown Name'}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">{product.category || 'Uncategorized'}</p>
+                      {/* ✨ Show resolved category name */}
+                      <p className="text-xs text-muted-foreground mb-2 capitalize">{categoryName}</p>
                       <div className="flex items-center justify-between mb-3">
                         <span className="font-semibold">₹{product.price || 0}</span>
                         <span className="text-xs text-muted-foreground">{product.unit || 'unit'}</span>
@@ -377,23 +401,23 @@ export function Products() {
         )}
       </Card>
 
-      {/* Add Product Modal */}
       <AddProductModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onAdd={createProduct} 
+        categories={categories} // ✨ Pass categories
+        onCategoryCreate={refetchCategories} // ✨ Refresh logic
       />
 
       {selectedProduct && (
         <>
-          {/* ✨ Updated Edit Modal with Dropdown */}
           <EditModal
             open={editModalOpen}
             onOpenChange={(open) => {
               setEditModalOpen(open);
               if (!open) setSelectedProduct(null);
             }}
-            onSave={handleUpdateProduct}
+            onSave={(updatedData) => handleUpdateProduct(updatedData)}
             title="Edit Product"
             data={selectedProduct}
             fields={[
@@ -401,10 +425,13 @@ export function Products() {
               { 
                 key: 'category', 
                 label: 'Category', 
-                type: 'select', // ✨ Changed to select
-                options: ['Dairy', 'Beverages', 'Cookies', 'Other'] // ✨ Options added
+                type: 'select', 
+                options: categories.map(c => ({ 
+                  label: c.name || c.displayName, 
+                  value: c._id || c.id 
+                })) // ✨ Dynamic Options
               },
-              { key: 'price', label: 'Price (₹)', type: 'text' }, // Changed from slider to text input for cleaner editing
+              { key: 'price', label: 'Price (₹)', type: 'text' },
               { key: 'stock', label: 'Stock', type: 'number' },
               { key: 'unit', label: 'Unit', type: 'text' },
             ]}

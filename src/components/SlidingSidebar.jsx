@@ -4,251 +4,196 @@ import {
   ShoppingCart, 
   Package, 
   Users, 
-  ShoppingBag,
-  Settings,
-  LogOut,
-  Bike,
-  Home,
-  Building2,
-  UserCog,
-  FileText,
-  Bell,
-  ChevronDown,
-  TrendingUp,
-  Wallet as WalletIcon,
-  Crown
+  UserCog, 
+  Bike, 
+  Wallet, 
+  Crown, 
+  Layout, 
+  Settings, 
+  User, 
+  LogOut, 
+  ChevronDown, 
+  HelpCircle,
+  FolderOpen,
+  BarChart3,
+  Bell
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
-// The 'SidebarProps' interface has been removed as it's TypeScript syntax.
+const menuGroups = [
+  {
+    title: 'Main',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+    ]
+  },
+  {
+    title: 'Management',
+    items: [
+      { icon: ShoppingCart, label: 'Orders', id: 'orders' },
+      { icon: Package, label: 'Products', id: 'products' },
+      { icon: FolderOpen, label: 'Category Management', id: 'category-management' },
+      { icon: Users, label: 'Customers', id: 'customers' },
+      { icon: Bike, label: 'Delivery Staff', id: 'delivery-staff' },
+      { icon: UserCog, label: 'User Management', id: 'user-management' },
+      { icon: Wallet, label: 'Wallet', id: 'wallet' },
+      { icon: Crown, label: 'Membership', id: 'membership' },
+      { icon: BarChart3, label: 'Reports', id: 'reports' },
+    ]
+  },
+  {
+    title: 'CMS',
+    items: [
+      { icon: Layout, label: 'Home Page', id: 'home-page' },
+      { icon: Bell, label: 'Push Notifications', id: 'notifications' },
+    ]
+  },
+  {
+    title: 'Settings',
+    items: [
+      { icon: Settings, label: 'Settings', id: 'updated-settings' },
+      { icon: User, label: 'Profile', id: 'profile' },
+      { icon: HelpCircle, label: 'Help & Support', id: 'help-support' },
+    ]
+  }
+];
 
-export function SlidingSidebar({ currentPage, onPageChange, onLogout }) { // Removed ': SidebarProps'
+export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole = "Admin" }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [openMenus, setOpenMenus] = useState({ // Removed <{ [key: string]: boolean }>
-    management: true,
-    cms: false
+  const [openGroups, setOpenGroups] = useState({
+    'Main': true,
+    'Management': true,
+    'CMS': true,
+    'Settings': true
   });
 
-  const toggleMenu = (menu) => { // Removed ': string'
-    setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+  const toggleGroup = (title) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
   };
 
-  const managementItems = [
-    { icon: ShoppingBag, label: 'Products', id: 'products' },
-    { icon: ShoppingCart, label: 'Orders', id: 'orders' },
-    { icon: Users, label: 'Customers', id: 'customers' },
-    { icon: Bike, label: 'Delivery Staff', id: 'delivery-staff' },
-    { icon: UserCog, label: 'User Management', id: 'user-management' },
-  ];
-
-  const cmsItems = [
-    { icon: FileText, label: 'Home Page', id: 'home-page' },
-    { icon: WalletIcon, label: 'Wallet', id: 'wallet' },
-    { icon: Crown, label: 'Membership', id: 'membership' },
-  ];
-
   return (
-    <div
+    <div 
       className={cn(
-        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-200 ease-in-out flex flex-col z-50 shadow-lg",
+        // ✨ FIX: Added 'bg-white' explicitly and 'shadow-xl' for better separation
+        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 flex flex-col shadow-lg",
         isExpanded ? "w-64" : "w-20"
       )}
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      {/* Logo */}
-      <div className="h-12 flex items-center px-4 border-b border-gray-200 bg-white">
-        {isExpanded ? (
-          <div className="flex flex-col">
-            <span className="text-red-500 whitespace-nowrap transition-opacity duration-200 text-sm font-semibold">
-              Dynasty Premium
-            </span>
-            <p className="text-xs text-gray-600 whitespace-nowrap transition-opacity duration-200">Welcome Admin!</p>
-          </div>
-        ) : (
-          <div className="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 mx-auto">
-            <Package className="h-4 w-4 text-white" />
-          </div>
-        )}
+      {/* Header */}
+      {/* ✨ FIX: Added 'bg-white' and 'z-20' to ensure header stays on top and solid */}
+      <div className="p-4 border-b border-gray-100 flex items-center h-20 flex-shrink-0 overflow-hidden bg-white z-20 relative">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm z-10 relative">
+          <span className="text-white font-bold text-xl">D</span>
+        </div>
+        
+        <div className={cn(
+          "ml-3 flex flex-col justify-center transition-all duration-300 overflow-hidden whitespace-nowrap min-w-[150px]",
+          isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+        )}>
+          <span className="font-bold text-xl text-red-600">Dynasty Premium</span>
+          <span className="text-xs text-gray-500 font-medium">Welcome {userRole}</span>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 overflow-y-auto">
-        <div className="space-y-1">
-          {/* Dashboard */}
-          <button
-            onClick={() => onPageChange('dashboard')}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs",
-              isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
-              currentPage === 'dashboard'
-                ? "bg-red-500 text-white" 
-                : "text-gray-600 hover:bg-gray-50"
-            )}
-          >
-            <Home className={cn("h-4 w-4 flex-shrink-0 transition-colors duration-200")} />
-            {isExpanded && (
-              <span className="whitespace-nowrap transition-opacity duration-200">Dashboard</span>
-            )}
-          </button>
-
-          {/* Management Section */}
-          <div className="space-y-1">
-            <button
-              onClick={() => isExpanded && toggleMenu('management')}
-              className={cn(
-                "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs text-gray-600 hover:bg-gray-50",
-                isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center"
-              )}
-            >
-              <UserCog className="h-4 w-4 flex-shrink-0" />
-              {isExpanded && (
-                <>
-                  <span className="whitespace-nowrap flex-1 text-left">Management</span>
-                  <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    openMenus.management && "rotate-180"
-                  )} />
-                </>
-              )}
-            </button>
+      {/* ✨ FIX: Added 'bg-white' to nav container */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 custom-scrollbar bg-white relative z-10">
+        {menuGroups.map((group) => (
+          <div key={group.title} className="mb-2">
+            {/* Group Header */}
+            <div className={cn(
+              "overflow-hidden transition-all duration-300",
+              isExpanded ? "max-h-10 opacity-100" : "max-h-0 opacity-0"
+            )}>
+              <button
+                onClick={() => toggleGroup(group.title)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600 transition-colors mb-1 whitespace-nowrap"
+              >
+                <span>{group.title}</span>
+                <ChevronDown 
+                  className={cn(
+                    "h-3 w-3 transition-transform duration-200",
+                    openGroups[group.title] ? "transform rotate-0" : "transform -rotate-90"
+                  )} 
+                />
+              </button>
+            </div>
             
-            {isExpanded && openMenus.management && (
-              <div className="ml-6 space-y-1">
-                {managementItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPage === item.id;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => onPageChange(item.id)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs",
-                        isActive 
-                          ? "bg-red-50 text-red-600" 
-                          : "text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <Icon className={cn("h-4 w-4 flex-shrink-0", isActive && "text-red-600")} />
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    </button>
-                  );
-                })}
+            {/* Separator for collapsed state */}
+            {!isExpanded && (
+              <div className="px-3 py-2">
+                <div className="h-px bg-gray-100 w-8 mx-auto" />
               </div>
             )}
+
+            {/* Group Items */}
+            <div className={cn(
+              "space-y-1 overflow-hidden transition-all duration-300",
+              isExpanded && !openGroups[group.title] ? "max-h-0 opacity-0" : "max-h-[1000px] opacity-100"
+            )}>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPage === item.id;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onPageChange(item.id)}
+                    className={cn(
+                      "w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative",
+                      isActive 
+                        ? "bg-red-50 text-red-600 shadow-sm" 
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    )}
+                    title={!isExpanded ? item.label : undefined}
+                  >
+                    <div className={cn(
+                      "flex items-center justify-center transition-colors flex-shrink-0 w-6 h-6",
+                      isActive ? "text-red-600" : "text-gray-500 group-hover:text-gray-700"
+                    )}>
+                      <Icon size={22} strokeWidth={1.5} />
+                    </div>
+                    
+                    <span className={cn(
+                      "ml-3 font-medium whitespace-nowrap transition-all duration-300 overflow-hidden text-left",
+                      isExpanded ? "opacity-100 w-32" : "opacity-0 w-0"
+                    )}>
+                      {item.label}
+                    </span>
+
+                    {isActive && (
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-red-500 rounded-l-full" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-
-          {/* CMS Section */}
-          <div className="space-y-1">
-            <button
-              onClick={() => isExpanded && toggleMenu('cms')}
-              className={cn(
-                "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs text-gray-600 hover:bg-gray-50",
-                isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center"
-              )}
-            >
-              <FileText className="h-4 w-4 flex-shrink-0" />
-              {isExpanded && (
-                <>
-                  <span className="whitespace-nowrap flex-1 text-left">CMS</span>
-                  <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    openMenus.cms && "rotate-180"
-                  )} />
-                </>
-              )}
-            </button>
-            
-            {isExpanded && openMenus.cms && (
-              <div className="ml-6 space-y-1">
-                {cmsItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPage === item.id;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => onPageChange(item.id)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-xs",
-                        isActive 
-                          ? "bg-red-50 text-red-600" 
-                          : "text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <Icon className={cn("h-4 w-4 flex-shrink-0", isActive && "text-red-600")} />
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Reports */}
-          <button
-            onClick={() => onPageChange('reports')}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs",
-              isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
-              currentPage === 'reports'
-                ? "bg-red-50 text-red-600" 
-                : "text-gray-600 hover:bg-gray-50"
-            )}
-          >
-            <TrendingUp className={cn("h-4 w-4 flex-shrink-0", currentPage === 'reports' && "text-red-600")} />
-            {isExpanded && (
-              <span className="whitespace-nowrap transition-opacity duration-200">Reports</span>
-            )}
-          </button>
-
-          {/* Push Notifications */}
-          <button
-            onClick={() => onPageChange('notifications')}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs",
-              isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
-              currentPage === 'notifications'
-                ? "bg-red-50 text-red-600" 
-                : "text-gray-600 hover:bg-gray-50"
-            )}
-          >
-            <Bell className={cn("h-4 w-4 flex-shrink-0", currentPage === 'notifications' && "text-red-600")} />
-            {isExpanded && (
-              <span className="whitespace-nowrap transition-opacity duration-200">Push Notifications</span>
-            )}
-          </button>
-
-          {/* Settings */}
-          <button
-            onClick={() => onPageChange('updated-settings')}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-lg transition-all duration-200 text-xs",
-              isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
-              currentPage === 'updated-settings'
-                ? "bg-red-50 text-red-600" 
-                : "text-gray-600 hover:bg-gray-50"
-            )}
-          >
-            <Settings className={cn("h-4 w-4 flex-shrink-0", currentPage === 'updated-settings' && "text-red-600")} />
-            {isExpanded && (
-              <span className="whitespace-nowrap transition-opacity duration-200">Settings</span>
-            )}
-          </button>
-        </div>
+        ))}
       </nav>
 
-      {/* Logout Button */}
-      <div className="p-3 border-t border-gray-200">
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-100 mt-auto bg-white z-20 relative">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all duration-200 text-xs"
-        >
-          <LogOut className="h-4 w-4 flex-shrink-0" />
-          {isExpanded && (
-            <span className="whitespace-nowrap transition-opacity duration-200">Logout</span>
+          className={cn(
+            "w-full flex items-center p-3 rounded-xl transition-all duration-200 text-gray-600 hover:bg-red-50 hover:text-red-600 group",
           )}
+        >
+          <div className="flex items-center justify-center text-gray-500 group-hover:text-red-600 flex-shrink-0 w-6 h-6">
+            <LogOut size={22} strokeWidth={1.5} />
+          </div>
+          <span className={cn(
+            "ml-3 font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
+            isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+          )}>
+            Logout
+          </span>
         </button>
       </div>
     </div>

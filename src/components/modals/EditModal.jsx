@@ -64,11 +64,17 @@ export function EditModal({
                     <SelectValue placeholder={`Select ${field.label}`} />
                   </SelectTrigger>
                   <SelectContent>
-                    {field.options?.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
+                    {field.options?.map((option) => {
+                      // ✨ FIX: Support both simple strings AND objects { label, value }
+                      const value = typeof option === 'object' ? option.value : option;
+                      const label = typeof option === 'object' ? option.label : option;
+                      
+                      return (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               ) : (

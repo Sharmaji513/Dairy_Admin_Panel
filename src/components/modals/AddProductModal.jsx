@@ -1,251 +1,245 @@
-import { useState, useRef } from 'react';
-import { X, Upload, Image as ImageIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { useState, useEffect } from 'react';
+import { Upload, Plus, Trash2 } from 'lucide-react'; // Added Trash2
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
+import { toast } from 'sonner@2.0.3';
 
-export function AddProductModal({ open, onClose, onAdd }) {
-  const fileInputRef = useRef(null);
-  const [imagePreview, setImagePreview] = useState('');
+
+// ✨ NEW: Component for a single variant row
+function VariantRow({ index, variant, onChange, onRemove }) {
+  return (
+    <div className="grid grid-cols-5 gap-2 items-end border p-3 rounded-lg mb-2 bg-gray-50">
+      <div className="space-y-1 col-span-2">
+        <Label className="text-xs">Label (e.g. Small)</Label>
+        <Input 
+          value={variant.label} 
+          onChange={(e) => onChange(index, 'label', e.target.value)} 
+          placeholder="Small" 
+          className="h-8 text-xs" 
+        />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Value</Label>
+        <Input 
+          type="number" 
+          value={variant.value} 
+          onChange={(e) => onChange(index, 'value', e.target.value)} 
+          placeholder="500" 
+          className="h-8 text-xs" 
+        />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Unit</Label>
+        <Select 
+          value={variant.unit} 
+          onValueChange={(val) => onChange(index, 'unit', val)}
+        >
+          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ml">ml</SelectItem>
+            <SelectItem value="kg">kg</SelectItem>
+            <SelectItem value="gm">gm</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Stock</Label>
+        <Input 
+          type="number" 
+          value={variant.stock} 
+          onChange={(e) => onChange(index, 'stock', e.target.value)} 
+          placeholder="0" 
+          className="h-8 text-xs" 
+        />
+      </div>
+      <div className="space-y-1 col-span-2">
+         <Label className="text-xs">Price (₹)</Label>
+         <Input 
+          type="number" 
+          value={variant.price} 
+          onChange={(e) => onChange(index, 'price', e.target.value)} 
+          placeholder="0" 
+          className="h-8 text-xs" 
+        />
+      </div>
+       <div className="col-span-5 flex justify-end">
+         <Button variant="ghost" size="sm" onClick={() => onRemove(index)} className="text-red-500 h-6 px-2"><Trash2 className="h-3 w-3 mr-1"/> Remove</Button>
+       </div>
+    </div>
+  );
+}
+
+export function AddProductModal({ open, onClose, onAdd, categories = [] }) {
+  // ✨ NEW: State for variants
+  const [variants, setVariants] = useState([
+    { label: 'Standard', value: '', unit: 'gm', price: '', stock: '' }
+  ]);
+
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    price: '',
-    stock: '', // ✨ Added Stock field
     description: '',
     imageFile: null,
     availableForOrder: true,
     vegetarian: false,
-    // Removed: cost, preparationTime, calories
   });
+  
+  const [imagePreview, setImagePreview] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    // For price and stock, allow only numbers and decimals, but store as string
-    if (name === 'price' || name === 'stock') {
-      if (value === '' || /^\d*\.?\d*$/.test(value)) {
-        setFormData({ ...formData, [name]: value });
-      }
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === 'checkbox' ? e.target.checked : value,
-      });
+  useEffect(() => {
+    if (!open) {
+      // Reset form
+      setFormData({ name: '', category: '', description: '', imageFile: null, availableForOrder: true, vegetarian: false });
+      setVariants([{ label: 'Standard', value: '', unit: 'gm', price: '', stock: '' }]);
+      setImagePreview('');
     }
-  };
-
-  const handleSwitchChange = (name) => (checked) => {
-    setFormData({ ...formData, [name]: checked });
-  };
+  }, [open]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Store the file for the API
       setFormData(prev => ({ ...prev, imageFile: file }));
+      // Show local preview immediately
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  const triggerImageUpload = () => {
-    fileInputRef.current?.click();
+  // ✨ NEW: Variant Handlers
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...variants];
+    newVariants[index][field] = value;
+    setVariants(newVariants);
   };
 
-  const handleSubmit = () => {
-    // Validate required fields
-    if (!formData.name || !formData.category || !formData.price || !formData.stock) {
-      alert("Please fill in all required fields (Name, Category, Price, Stock).");
+  const addVariant = () => {
+    setVariants([...variants, { label: '', value: '', unit: 'gm', price: '', stock: '' }]);
+  };
+
+  const removeVariant = (index) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.category) {
+      toast.error("Name and Category are required");
       return;
     }
-
-    const newProduct = {
-      name: formData.name,
-      category: formData.category,
-      price: parseFloat(formData.price) || 0,
-      stock: parseInt(formData.stock) || 0, // ✨ Parse stock as an integer
-      description: formData.description,
-      availableForOrder: formData.availableForOrder,
-      vegetarian: formData.vegetarian,
-      imageFile: formData.imageFile,
-    };
     
-    onAdd(newProduct);
-    onClose();
-    resetForm();
-  };
+    // Validate variants
+    if (variants.length === 0 || variants.some(v => !v.label || !v.value || !v.price || !v.stock)) {
+        toast.error("Please fill in all fields for at least one variant");
+        return;
+    }
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      category: '',
-      price: '',
-      stock: '',
-      description: '',
-      imageFile: null,
-      availableForOrder: true,
-      vegetarian: false,
-    });
-    setImagePreview('');
+    setLoading(true);
+    try {
+      // Combine form data with variants
+      await onAdd({ ...formData, variants });
+      onClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Add New Product</DialogTitle>
-            <DialogDescription className="sr-only">
-              Fill in the details to create a new product.
-            </DialogDescription>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle>Add New Product</DialogTitle>
         </DialogHeader>
-        
-        <div className="grid grid-cols-2 gap-6 py-4">
-          {/* Left Column - Image Upload */}
-          <div>
-            <Label>Product Image</Label>
-            <div 
-              className={`mt-2 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors h-[300px] flex flex-col items-center justify-center ${
-                imagePreview ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onClick={triggerImageUpload}
-            >
-              {imagePreview ? (
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="h-full w-full object-contain rounded-lg" 
-                />
-              ) : (
-                <>
-                  <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <Upload className="h-6 w-6 text-gray-400" />
+
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            {/* ... (Image Upload Section remains same) ... */}
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 relative overflow-hidden">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                    <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> image</p>
                   </div>
-                  <p className="text-sm font-medium">Click to upload image</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    SVG, PNG, JPG or GIF (max. 2MB)
-                  </p>
-                </>
-              )}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
-          </div>
-
-          {/* Right Column - Product Details */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g., Chicken Biryani"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Dairy">Dairy</SelectItem>
-                  <SelectItem value="Beverages">Beverages</SelectItem>
-                  <SelectItem value="Cookies">Cookies</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+                )}
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+              </label>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price (₹) *</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="text" // ✨ Changed from 'number' to 'text' to remove arrows
-                  inputMode="decimal" // Helps on mobile keyboards
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                />
+                <Label>Product Name *</Label>
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Butter Chicken" />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="stock">Stock *</Label> {/* ✨ Added Stock field */}
-                <Input
-                  id="stock"
-                  name="stock"
-                  type="text"
-                  inputMode="numeric"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  placeholder="e.g., 50"
-                />
+                <Label>Category *</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
+                        {cat.displayName || cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Removed Cost, Preparation Time, Calories fields */}
+            {/* ✨ NEW: Variants Section */}
+            <div className="space-y-2 border-t pt-2">
+               <div className="flex justify-between items-center">
+                 <Label>Variants & Pricing *</Label>
+                 <Button type="button" variant="outline" size="sm" onClick={addVariant} className="h-7 text-xs"><Plus className="h-3 w-3 mr-1"/> Add Variant</Button>
+               </div>
+               {variants.map((variant, index) => (
+                 <VariantRow 
+                   key={index} 
+                   index={index} 
+                   variant={variant} 
+                   onChange={handleVariantChange} 
+                   onRemove={removeVariant} 
+                 />
+               ))}
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Enter product description..."
-                className="h-20"
-              />
+              <Label>Description</Label>
+              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Product details..." />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="flex items-center justify-between border p-3 rounded-lg">
-                <Label htmlFor="availableForOrder" className="cursor-pointer">Available</Label>
-                <Switch
-                  id="availableForOrder"
-                  checked={formData.availableForOrder}
-                  onCheckedChange={handleSwitchChange('availableForOrder')}
-                />
+            <div className="flex gap-4">
+              <div className="flex items-center space-x-2 border p-3 rounded w-full">
+                <Switch checked={formData.availableForOrder} onCheckedChange={(c) => setFormData({...formData, availableForOrder: c})} />
+                <Label>Available</Label>
               </div>
-              <div className="flex items-center justify-between border p-3 rounded-lg">
-                <Label htmlFor="vegetarian" className="cursor-pointer">Vegetarian</Label>
-                <Switch
-                  id="vegetarian"
-                  checked={formData.vegetarian}
-                  onCheckedChange={handleSwitchChange('vegetarian')}
-                />
+              <div className="flex items-center space-x-2 border p-3 rounded w-full">
+                <Switch checked={formData.vegetarian} onCheckedChange={(c) => setFormData({...formData, vegetarian: c})} />
+                <Label>Veg</Label>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>
-            Add Product
-          </Button>
-        </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Product'}
+            </Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

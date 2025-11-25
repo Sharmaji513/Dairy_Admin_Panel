@@ -5,6 +5,7 @@ import { UpdatedHeader } from "./components/UpdatedHeader";
 import { Dashboard } from "./pages/Dashboard";
 import { Orders } from "./pages/Orders";
 import { Products } from "./pages/Products";
+import { CategoryManagement } from "./pages/CategoryManagement"; // ✨ ADD THIS
 import { Customers } from "./pages/Customers";
 import { CustomerDetailsPage } from './pages/CustomerDetailsPage';
 import { UpdatedSettings } from "./pages/UpdatedSettings";
@@ -32,7 +33,7 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
     const path = location.pathname.split('/')[1];
     // If path is empty (root), default to dashboard
     if (!path) return 'dashboard';
-    // Keep 'customers' highlighted even when viewing details (/customers/123)
+    // Keep 'customers' highlighted even when viewing details
     if (path === 'customers') return 'customers';
     return path;
   };
@@ -40,7 +41,6 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
   const currentPage = getCurrentPage();
 
   const getPageInfo = () => {
-    // Special case for details page
     if (location.pathname.startsWith('/customers/') && location.pathname.split('/').length > 2) {
       return { title: "Customer Details", subtitle: "View Profile" };
     }
@@ -52,6 +52,8 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
         return { title: "Orders", subtitle: "Manage Orders" };
       case "products":
         return { title: "Products", subtitle: "Inventory Management" };
+      case "category-management": // ✨ ADD THIS
+        return { title: "Category Management", subtitle: "Manage Categories" };
       case "customers":
         return { title: "Customers", subtitle: "Customer Base" };
       case "delivery-staff":
@@ -79,7 +81,6 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
     }
   };
 
-  // Navigation handler for Sidebar/Header
   const handleNavigation = (pageKey) => {
     if (pageKey === 'dashboard') navigate('/');
     else navigate(`/${pageKey}`);
@@ -92,6 +93,7 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
         currentPage={currentPage}
         onPageChange={handleNavigation}
         onLogout={handleLogout}
+        userRole={currentUser?.role || "User"}
       />
       <div className="flex flex-col h-full ml-20">
         <UpdatedHeader
@@ -110,8 +112,8 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/category-management" element={<CategoryManagement />} /> {/* ✨ ADD THIS */}
             
-            {/* ✨ Customer Routes ✨ */}
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetailsPage />} />
             
@@ -134,7 +136,6 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
             <Route path="/notifications" element={<PushNotifications />} />
             <Route path="/help-support" element={<HelpSupport />} />
             
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -143,7 +144,6 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
   );
 }
 
-// Wrapper for Authentication Routes
 function AuthLayout({ onLogin, onSignup }) {
   const navigate = useNavigate();
 
@@ -177,7 +177,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Check if user is already logged in
     const user = getCurrentUser();
     if (user) {
       setIsLoggedIn(true);

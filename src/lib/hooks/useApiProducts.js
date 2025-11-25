@@ -41,19 +41,28 @@ export function useApiProducts(filters) {
       const rawProducts = response.products || (response.data && response.data.products) || [];
       
       // ✨ KEY FIX: Map backend fields to frontend fields
-      const mappedProducts = rawProducts.map(p => ({
-        ...p,
+      const mappedProducts = rawProducts.map(p => {
+        // Determine the correct image URL
+        let imageUrl = p.image || p.thumbnail || null;
         
-        // 1. Map MongoDB '_id' to 'id'
-        id: p._id || p.id, 
-        
-        // 2. Map 'dishName' to 'name'
-        name: p.dishName || p.name || 'Unknown Product',
-        
-        // 3. Handle Image URL
-        image: p.image ? (p.image.startsWith('http') ? p.image : `https://dynasty-premium-backend.onrender.com${p.image}`) : null
-      }));
+        if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+          // If it's a relative path, prepend the backend URL
+          // IMPORTANT: Use the exact backend URL from your config or .env
+          const backendUrl = API_CONFIG.BASE_URL.replace(/\/api$/, ''); // Remove '/api' suffix if present
+          imageUrl = `${backendUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+        }
 
+        return {
+          ...p,
+          id: p._id || p.id,
+          name: p.dishName || p.name || 'Unknown Product',
+          image: imageUrl, // ✨ Use the fixed URL
+          stock: p.stock || (p.availableQuantities?.[0]?.value) || 0, // Robust stock check
+          unit: p.unit || (p.availableQuantities?.[0]?.label) || 'unit', // Robust unit check
+          price: p.price || (p.availableQuantities?.[0]?.price) || 0
+        };
+      });
+      
       const totalCount = response.total || (response.data && response.data.total) || mappedProducts.length || 0;
 
       setProducts(mappedProducts);

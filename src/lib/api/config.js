@@ -51,6 +51,14 @@ export const API_ENDPOINTS = {
     TOGGLE_STATUS: '/products/toggle/:id', // Assumed pattern
   },
 
+  CATEGORIES: {
+    LIST: '/categories',
+    GET: '/categories/:id',
+    CREATE: '/categories',
+    UPDATE: '/categories/:id',
+    DELETE: '/categories/:id',
+  },
+
   // Orders (Assuming patterns based on Products/Customers)
   ORDERS: {
     LIST: '/orders',

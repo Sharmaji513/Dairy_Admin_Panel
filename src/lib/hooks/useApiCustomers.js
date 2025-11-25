@@ -4,7 +4,6 @@ import { API_CONFIG } from '../api/config';
 import { customers as defaultCustomers } from '../mockData';
 
 export function useApiCustomers(filters) {
-  // Initialize with empty array
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -29,25 +28,24 @@ export function useApiCustomers(filters) {
       return;
     }
 
-    // Only set loading if it's not a background refresh (like after a toggle)
     if (!isBackground) setLoading(true);
     setError(null);
 
     try {
       const activeFilters = cleanFilters(filters);
       const response = await customerService.getCustomers(activeFilters);
-      console.log("API Response (Background:", isBackground, "):", response);
       
-      // Robust response handling
       const customersList = response.customers || (response.data && response.data.customers) || [];
+      
       if (isBackground && customersList.length === 0 && total > 0) {
-          console.warn("Background fetch returned empty list, ignoring to preserve UI.");
           return;
       }
+
       const mappedCustomers = Array.isArray(customersList) ? customersList.map(c => ({
         ...c,
         id: c._id || c.id,
-        name: c.name || (c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : null) || c.email || "Unknown"
+        name: c.name || (c.firstName && c.lastName ? `${c.firstName} ${c.lastName}` : null) || c.email || "Unknown Customer",
+        status: (c.status || 'inactive').toLowerCase()
       })) : [];
 
       const totalCount = response.total || (response.data && response.data.total) || mappedCustomers.length || 0;
@@ -66,7 +64,6 @@ export function useApiCustomers(filters) {
     }
   };
 
-  // Create
   const createCustomer = async (customer) => {
     setLoading(true);
     try {
@@ -81,7 +78,6 @@ export function useApiCustomers(filters) {
     }
   };
 
-  // Update
   const updateCustomer = async (id, customer) => {
     setLoading(true);
     try {
@@ -96,7 +92,6 @@ export function useApiCustomers(filters) {
     }
   };
 
-  // Delete
   const deleteCustomer = async (id) => {
     setLoading(true);
     try {
@@ -111,7 +106,7 @@ export function useApiCustomers(filters) {
     }
   };
 
-  // ✨ FIX: Optimistic Toggle (Instant update, no loading spinner)
+  // ✨ FIX: Robust Optimistic Toggle (No auto-revert)
   const toggleCustomerStatus = async (id) => {
     // 1. Snapshot previous state for rollback
     const previousCustomers = [...customers];
@@ -122,7 +117,7 @@ export function useApiCustomers(filters) {
         if (c.id === id) {
           // Flip the status locally and KEEP IT
           const currentStatus = (c.status || '').toLowerCase();
-          const newStatus = currentStatus === 'active' ? 'Inactive' : 'Active';
+          const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
           return { ...c, status: newStatus };
         }
         return c;
