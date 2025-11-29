@@ -1,18 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, FolderOpen, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea'; // Ensure this component exists or use Input
-import { Switch } from '../components/ui/switch';
+import { Switch } from '../components/ui/switch'; // ✨ Custom green switch
 import { useApiCategories } from '../lib/hooks/useApiCategories';
 import { categoryService } from '../lib/api/services/categoryService';
 import { showSuccessToast } from '../lib/toast';
 import { toast } from 'sonner@2.0.3';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback'; // Reuse this helper
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 export function CategoryManagement() {
   const { categories, loading, refetch } = useApiCategories();
@@ -20,25 +18,7 @@ export function CategoryManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const fileInputRef = useRef(null);
- 
   
-  const location = useLocation();
-
-  // ✨ ADD THIS EFFECT: Check URL params
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('action') === 'create') {
-       // Wait a tiny bit for mount
-       setTimeout(() => {
-         setEditingCategory(null);
-         setFormData({ name: '', displayName: '', description: '', icon: '', imageFile: null, imagePreview: '', isActive: true });
-         setModalOpen(true);
-       }, 100);
-    }
-  }, [location]);
- 
-  
-  // Form State
   const [formData, setFormData] = useState({ 
     name: '', 
     displayName: '', 
@@ -62,7 +42,7 @@ export function CategoryManagement() {
         description: category.description || '',
         icon: category.icon || '',
         imageFile: null,
-        imagePreview: category.image || '', // Show existing image
+        imagePreview: category.image || '', 
         isActive: category.isActive ?? true
       });
     } else {
@@ -91,16 +71,19 @@ export function CategoryManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.displayName || (!formData.imageFile && !editingCategory)) {
-       toast.error("Name, Display Name and Image are required");
+    if (!formData.name || !formData.displayName) {
+       toast.error("Name and Display Name are required");
        return;
     }
-
     try {
       if (editingCategory) {
-        // Update logic pending
-        toast.info("Update feature pending backend support");
+        await categoryService.updateCategory(editingCategory._id || editingCategory.id, formData);
+        showSuccessToast('Category updated successfully!');
       } else {
+        if (!formData.imageFile && !formData.imagePreview) {
+             toast.error("Image is required for new categories");
+             return;
+        }
         await categoryService.createCategory(formData);
         showSuccessToast('Category created successfully!');
       }
@@ -114,9 +97,11 @@ export function CategoryManagement() {
   const handleDelete = async (id) => {
     if(confirm("Delete this category?")) {
        try {
-         toast.info("Delete feature pending backend support");
+         await categoryService.deleteCategory(id);
+         showSuccessToast('Category deleted');
+         refetch();
        } catch(err) {
-         toast.error("Failed to delete");
+         toast.error("Failed to delete category");
        }
     }
   }
@@ -141,12 +126,12 @@ export function CategoryManagement() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? <p>Loading...</p> : filteredCategories.map(cat => (
-            <Card key={cat._id || cat.id} className="p-4 flex items-center justify-between hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3">
-                {/* ✨ Display Category Image/Icon */}
-                <div className="h-12 w-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+            <Card key={cat._id || cat.id} className="p-4 flex items-center justify-between hover:shadow-lg transition-shadow">
+              <div className="flex items-center gap-4">
+                {/* ✨ LARGER IMAGE (h-20 w-20) */}
+                <div className="h-20 w-20 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border shadow-sm">
                   {cat.image ? (
                      <ImageWithFallback 
                         src={cat.image} 
@@ -154,21 +139,22 @@ export function CategoryManagement() {
                         className="w-full h-full object-cover"
                      />
                   ) : (
-                     <span className="text-2xl">{cat.icon || <FolderOpen className="h-6 w-6 text-blue-600" />}</span>
+                     <FolderOpen className="h-8 w-8 text-blue-600" />
                   )}
                 </div>
                 
                 <div>
-                  <h3 className="font-medium">{cat.displayName || cat.name}</h3>
-                  <p className="text-xs text-gray-500">{cat.description || cat.name}</p>
+                  <h3 className="font-bold text-lg">{cat.displayName || cat.name}</h3>
+                  {/* ✨ PRODUCT COUNT */}
+                  <p className="text-sm text-gray-500">{cat.productsCount || 0} Products</p>
                 </div>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" onClick={() => handleOpenModal(cat)}>
-                  <Edit2 className="h-4 w-4 text-gray-500" />
+              <div className="flex flex-col gap-2">
+                <Button variant="ghost" size="icon" onClick={() => handleOpenModal(cat)} className="hover:bg-blue-50 text-blue-600">
+                  <Edit2 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(cat._id || cat.id)}>
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                <Button variant="ghost" size="icon" onClick={() => handleDelete(cat._id || cat.id)} className="hover:bg-red-50 text-red-600">
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </Card>
@@ -182,18 +168,17 @@ export function CategoryManagement() {
             <DialogTitle>{editingCategory ? 'Edit Category' : 'New Category'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Image Upload */}
             <div className="flex justify-center">
                <div 
-                  className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative"
+                  className="h-32 w-32 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                >
                   {formData.imagePreview ? (
                     <img src={formData.imagePreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <>
-                      <Upload className="h-6 w-6 text-gray-400 mb-1" />
-                      <span className="text-[10px] text-gray-500">Upload Image</span>
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-500 font-medium">Click to Upload</span>
                     </>
                   )}
                </div>
@@ -202,51 +187,45 @@ export function CategoryManagement() {
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                <Label>Display Name *</Label>
-                <Input 
-                    value={formData.displayName} 
-                    onChange={(e) => setFormData({...formData, displayName: e.target.value})} 
-                    placeholder="e.g. Fresh Milk"
-                />
+                    <Label>Display Name *</Label>
+                    <Input 
+                        value={formData.displayName} 
+                        onChange={(e) => setFormData({...formData, displayName: e.target.value})} 
+                        placeholder="e.g. Fresh Milk"
+                    />
                 </div>
                 <div className="space-y-2">
-                <Label>Internal Name *</Label>
-                <Input 
-                    value={formData.name} 
-                    onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                    placeholder="e.g. milk"
-                    disabled={!!editingCategory} 
-                />
+                    <Label>Internal Name *</Label>
+                    <Input 
+                        value={formData.name} 
+                        onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                        placeholder="e.g. milk"
+                        disabled={!!editingCategory} 
+                    />
                 </div>
             </div>
-            
-             <div className="space-y-2">
-              <Label>Icon (Emoji or Class)</Label>
-              <Input 
-                value={formData.icon} 
-                onChange={(e) => setFormData({...formData, icon: e.target.value})} 
-                placeholder="e.g. 🥛"
-              />
-            </div>
-
              <div className="space-y-2">
               <Label>Description</Label>
               <Input 
                 value={formData.description} 
                 onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                placeholder="Category description..."
+                placeholder="Short description..."
               />
             </div>
             
-            <div className="flex items-center space-x-2 border p-3 rounded-lg">
+            {/* ✨ FIXED TOGGLE */}
+            <div className="flex items-center justify-between border p-3 rounded-lg bg-gray-50">
+                <Label className="cursor-pointer font-medium" htmlFor="active-switch">Active Status</Label>
                 <Switch 
+                    id="active-switch"
                     checked={formData.isActive} 
                     onCheckedChange={(checked) => setFormData({...formData, isActive: checked})} 
                 />
-                <Label>Active Status</Label>
             </div>
 
-            <Button onClick={handleSubmit} className="w-full">Save Category</Button>
+            <Button onClick={handleSubmit} className="w-full bg-blue-600 hover:bg-blue-700">
+                {editingCategory ? 'Update Category' : 'Create Category'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
