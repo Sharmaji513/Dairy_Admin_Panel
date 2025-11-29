@@ -31,7 +31,6 @@ export const categoryService = {
     if (categoryData.displayName) formData.append('displayName', categoryData.displayName);
     if (categoryData.description !== undefined) formData.append('description', categoryData.description);
     if (categoryData.imageFile) formData.append('image', categoryData.imageFile);
-    if (categoryData.icon) formData.append('icon', categoryData.icon);
     if (categoryData.isActive !== undefined) formData.append('isActive', categoryData.isActive ? 'true' : 'false');
 
     return apiClient.put(buildUrl(API_ENDPOINTS.CATEGORIES.UPDATE, { id }), formData);
@@ -42,4 +41,3 @@ export const categoryService = {
     return apiClient.delete(buildUrl(API_ENDPOINTS.CATEGORIES.DELETE, { id }));
   }
 };
-

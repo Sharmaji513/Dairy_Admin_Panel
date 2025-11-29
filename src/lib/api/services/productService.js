@@ -24,20 +24,15 @@ export const productService = {
     
     // 2. Optional Fields
     formData.append('description', productData.description || '');
-    formData.append('preparationTime', '15');
-    formData.append('calories', '0');
+    formData.append('preparationTime', productData.preparationTime || '15');
+    formData.append('calories', productData.calories || '0');
     
-    // 3. Arrays (Benefits & Attributes)
+    // 3. Arrays
     if (productData.benefits && productData.benefits.length > 0) {
-        productData.benefits.forEach((benefit, index) => {
-            formData.append(`benefits[${index}]`, benefit); 
-        });
+        productData.benefits.forEach(benefit => formData.append('benefits[]', benefit));
     }
-
     if (productData.attributes && productData.attributes.length > 0) {
-         productData.attributes.forEach((attr, index) => {
-            formData.append(`attributes[${index}]`, attr);
-        });
+         productData.attributes.forEach(attr => formData.append('attributes[]', attr));
     }
 
     // 4. Booleans
@@ -62,7 +57,6 @@ export const productService = {
              if (v.imageData.type === 'url') {
                variantImageVal = v.imageData.value;
              } else if (v.imageData.type === 'file') {
-               // Note: Backend must support "variantImage_N" fields
                formData.append(`variantImage_${index}`, v.imageData.value);
                variantImageVal = `variantImage_${index}`; 
              }
@@ -82,12 +76,13 @@ export const productService = {
     return apiClient.post(API_ENDPOINTS.PRODUCTS.CREATE, formData);
   },
 
-  // ... update/delete/toggle remain same ...
   async updateProduct(id, productData) {
-      // (Update this similarly if needed)
       const formData = new FormData();
-      if (productData.name) formData.append('dishName', productData.name);
-      // ...
+      if(productData.name) formData.append('dishName', productData.name);
+      // ... add other fields if you want update to work fully
+      if (productData.mainImage?.type === 'file') {
+          formData.append('image', productData.mainImage.value);
+      }
       return apiClient.put(buildUrl(API_ENDPOINTS.PRODUCTS.UPDATE, { id }), formData);
   },
 
