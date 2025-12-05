@@ -23,14 +23,26 @@ export function useApiUsers(filters) {
       // Handle response structure
       const usersList = response.users || (response.data && response.data.users) || response.data || [];
 
-      const mappedUsers = Array.isArray(usersList) ? usersList.map(u => ({
-        ...u,
-        id: u._id || u.id,
-        name: u.name || `${u.firstName} ${u.lastName}`,
-        status: u.isActive ? 'active' : 'inactive', // Map boolean to string
-        role: u.role || 'Manager', // Default role if missing
-        // permissions might come as array
-      })) : [];
+      const mappedUsers = Array.isArray(usersList) ? usersList.map(u => {
+        const isActive = (typeof u.isActive === 'boolean')
+          ? u.isActive
+          : (typeof u.status === 'string')
+            ? u.status.toLowerCase() === 'active'
+            : true; // default to true if neither present
+
+        const status = (typeof u.status === 'string')
+          ? u.status.toLowerCase()
+          : (isActive ? 'active' : 'inactive');
+
+        return {
+          ...u,
+          id: u._id || u.id,
+          name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+          isActive,
+          status,
+          role: u.role || 'Manager', // Default role if missing
+        };
+      }) : [];
 
       setUsers(mappedUsers);
     } catch (err) {

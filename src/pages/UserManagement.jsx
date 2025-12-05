@@ -30,7 +30,7 @@ export function UserManagement() {
 
   // ✨ API Hook
   const { 
-    users: userList, loading, error, createUser, updateUser, deleteUser 
+    users: userList, loading, error, createUser, updateUser, deleteUser, toggleUserStatus 
   } = useApiUsers({ search: searchQuery });
 
   // ... (handlers remain the same)
@@ -56,8 +56,10 @@ export function UserManagement() {
 
   const totalUsers = userList.length;
   const adminUsers = userList.filter(u => u.role === 'Super Admin' || u.role === 'Admin').length;
-  const activeUsers = userList.filter(u => u.status === 'active').length;
-
+  const activeUsers = userList.filter(u => 
+    u.isActive === true || 
+    (u.status && u.status.toLowerCase() === 'active')
+  ).length;
   const modules = ['All Modules', 'Dashboard', 'User Management', 'Settings']; // Add more as needed
   const sortOptions = [{ value: 'name', label: 'Sort by Name' }, { value: 'email', label: 'Sort by Email' }, { value: 'role', label: 'Sort by Role' }];
 

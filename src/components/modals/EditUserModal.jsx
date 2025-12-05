@@ -1,279 +1,195 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Button } from '../ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Checkbox } from '../ui/checkbox';
-import { updateUserInSystem } from '../../lib/auth'; // Removed AuthUser import
+import { useState, useEffect, useCallback } from "react";
+// ✨ REMOVED: X icon import
+import { Check, Power } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Checkbox } from "../ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectPortal,
+} from "../ui/select";
+import { ROLE_PERMISSIONS, getRoleFromPermissions } from "../../lib/rolePermissions";
 
-// Removed EditUserModalProps interface
-// Removed Permission interface
+// Custom Toggle for Active Status
+function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500" }) {
+  return (
+    <div 
+      onClick={() => onChange(!checked)}
+      className={`
+        flex items-center justify-between w-full p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none
+        ${checked ? `border-${activeColor.split('-')[1]}-200 bg-${activeColor.split('-')[1]}-50` : 'border-gray-200 bg-white hover:bg-gray-50'}
+      `}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`
+          h-8 w-8 rounded-full flex items-center justify-center transition-colors
+          ${checked ? `bg-white text-${activeColor.split('-')[1]}-600 shadow-sm` : 'bg-gray-100 text-gray-400'}
+        `}>
+          {checked ? <Check className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+        </div>
+        <span className={`text-sm font-medium ${checked ? 'text-gray-900' : 'text-gray-500'}`}>
+          {label}
+        </span>
+      </div>
+      
+      <div className={`
+        w-9 h-5 rounded-full transition-colors relative
+        ${checked ? activeColor : 'bg-gray-300'}
+      `}>
+        <div className={`
+          absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform duration-200
+          ${checked ? 'translate-x-4' : 'translate-x-0'}
+        `} />
+      </div>
+    </div>
+  );
+}
 
-export function EditUserModal({ open, onOpenChange, onSave, user }) { // Removed props type
-  const [formData, setFormData] = useState({ // Removed <Partial<AuthUser>>
-    name: '',
-    email: '',
-    role: 'User',
-    status: 'active',
+export function EditUserModal({ open, onOpenChange, onSave, user }) {
+  const [isActive, setIsActive] = useState(true);
+  const [role, setRole] = useState("PanelUser");
+  
+  const [permissions, setPermissions] = useState({
+    dashboard: false, products: false, orders: false, customers: false,
+    userManagement: false, settings: false, reports: false, 
   });
-
-  const [permissions, setPermissions] = useState([ // Removed <Permission[]>
-    // Core section
-    { id: 'dashboard', label: 'Dashboard', description: 'Main overview and metrics', checked: false },
-    { id: 'products', label: 'Products', description: 'Product management', checked: false },
-    { id: 'orders', label: 'Orders', description: 'Order management', checked: false },
-    { id: 'customers', label: 'Customers', description: 'Customer management', checked: false },
-    { id: 'delivery-staff', label: 'Delivery Staff', description: 'Staff management', checked: false },
-    { id: 'membership', label: 'Membership', description: 'Membership tiers', checked: false },
-    { id: 'profile', label: 'Profile', description: 'User profile access', checked: false },
-    
-    // Analytics & Reports section
-    { id: 'analytics', label: 'Analytics', description: 'Advanced analytics dashboard', checked: false },
-    { id: 'audit-logs', label: 'Audit Logs', description: 'System audit trails', checked: false },
-    { id: 'reports', label: 'Reports', description: 'View and generate reports', checked: false },
-    
-    // Operations section
-    { id: 'user-management', label: 'User Management', description: 'Manage users and permissions', checked: false },
-    { id: 'wallet', label: 'Wallet', description: 'Wallet management', checked: false },
-    { id: 'billing', label: 'Billing', description: 'Payment and subscription management', checked: false },
-    { id: 'notifications', label: 'Notifications', description: 'Email and push notifications', checked: false },
-    { id: 'content-management', label: 'Content Management', description: 'Content creation and editing', checked: false },
-    { id: 'homepage', label: 'Homepage', description: 'Homepage management', checked: false },
-    
-    // Development section
-    { id: 'settings', label: 'Settings', description: 'System configuration', checked: false },
-    { id: 'help-support', label: 'Help & Support', description: 'Help and support access', checked: false },
-    { id: 'integrations', label: 'Integrations', description: 'Third party integrations', checked: false },
-    { id: 'api-access', label: 'Api Access', description: 'API keys and documentation', checked: false },
-    { id: 'security', label: 'Security', description: 'Security settings and logs', checked: false },
-  ]);
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status || 'active',
-      });
-
-      // Set some default permissions based on role
-      const defaultPermissions = [...permissions];
-      if (user.role === 'Super Admin' || user.role === 'Admin') {
-        // Admins get all permissions
-        defaultPermissions.forEach(p => p.checked = true);
-      } else {
-        // Regular users get basic permissions
-        defaultPermissions.forEach(p => {
-          p.checked = ['dashboard', 'orders', 'products', 'customers', 'profile'].includes(p.id);
+      // ✨ FIX: Correctly detect 'active' vs 'inactive' string or boolean
+      const userIsActive = user.isActive === true || (user.status && user.status.toLowerCase() === 'active');
+      setIsActive(userIsActive);
+      
+      const userRole = getRoleFromPermissions(user.permissions);
+      setRole(userRole);
+      
+      const userPerms = user.permissions || [];
+      setPermissions(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(key => {
+          next[key] = userPerms.includes(key);
         });
-      }
-      setPermissions(defaultPermissions);
+        return next;
+      });
     }
   }, [user, open]);
 
-  const handleSubmit = (e) => { // Removed : React.FormEvent
+  const handlePermissionChange = useCallback((key) => {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (user) {
-      const updatedUser = { // Removed : AuthUser
-        ...user,
-        ...formData,
-        name: formData.name, // Removed !
-        email: formData.email, // Removed !
-        role: formData.role, // Removed !
-        status: formData.status || 'active',
-      };
-      
-      updateUserInSystem(user.id, formData);
-      onSave(updatedUser);
-      onOpenChange(false);
-    }
+    const newPermissionsArray = Object.keys(permissions).filter(key => permissions[key]);
+    const newRole = getRoleFromPermissions(newPermissionsArray);
+
+    const updatedData = {
+      id: user.id,
+      permissions: newPermissionsArray,
+      // ✨ FIX: Send 'isActive' as boolean (true/false) which backend expects
+      isActive: isActive,
+      // Pass UI helpers back to parent
+      role: newRole, 
+      status: isActive ? 'active' : 'inactive' 
+    };
+
+    onSave(updatedData);
+    onOpenChange(false);
   };
 
-  const handlePermissionToggle = (id) => { // Removed : string
-    setPermissions(permissions.map(p => 
-      p.id === id ? { ...p, checked: !p.checked } : p
-    ));
-  };
-
-  const categoryPermissions = [
-    { 
-      category: 'Core', 
-      items: ['dashboard', 'products', 'orders', 'customers', 'delivery-staff', 'membership', 'profile'] 
-    },
-    { 
-      category: 'Analytics & Reports', 
-      items: ['analytics', 'audit-logs', 'reports'] 
-    },
-    { 
-      category: 'Operations', 
-      items: ['user-management', 'wallet', 'billing', 'notifications', 'content-management', 'homepage'] 
-    },
-    { 
-      category: 'Development', 
-      items: ['settings', 'help-support', 'integrations', 'api-access', 'security'] 
-    },
-  ];
+  const PermissionCheckbox = ({ permissionKey, title }) => (
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id={permissionKey}
+        checked={permissions[permissionKey]}
+        onCheckedChange={() => handlePermissionChange(permissionKey)}
+        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+      />
+      <Label htmlFor={permissionKey} className="text-sm font-normal cursor-pointer">{title}</Label>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 gap-0 bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col [&>button]:hidden sm:max-w-2xl">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Edit User</DialogTitle>
-          <DialogDescription>Edit user information and permissions</DialogDescription>
-        </DialogHeader>
+      {/* ✨ REMOVED: overflow-hidden to fix dropdown clipping */}
+      <DialogContent className="sm:max-w-[600px] bg-white flex flex-col max-h-[90vh] p-0 gap-0">
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
-          <h2 className="text-base font-medium">Edit User</h2>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        {/* ✨ CLEANER HEADER: Removed manual X button */}
+        <DialogHeader className="px-6 py-4 border-b flex-row items-center justify-between space-y-0 sticky top-0 z-10 bg-white">
+          <div>
+            <DialogTitle className="text-base font-medium">Edit User</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">{user?.name}</DialogDescription>
+          </div>
+        </DialogHeader>
 
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <form onSubmit={handleSubmit} id="edit-user-form">
-            {/* Full Name and Email */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-xs font-normal">
-                  Full Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="h-9 text-xs"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs font-normal">
-                  Email <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  className="h-9 text-xs"
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+            {/* Read-only fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>First Name</Label><Input value={user?.firstName || user?.name?.split(' ')[0] || ''} disabled className="bg-gray-50" /></div>
+              <div className="space-y-2"><Label>Last Name</Label><Input value={user?.lastName || user?.name?.split(' ').slice(1).join(' ') || ''} disabled className="bg-gray-50" /></div>
             </div>
+            <div className="space-y-2"><Label>Email</Label><Input value={user?.email || ''} disabled className="bg-gray-50" /></div>
+            <div className="space-y-2"><Label>Phone</Label><Input value={user?.phone || ''} disabled className="bg-gray-50" /></div>
 
-            {/* Role and Status */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="role" className="text-xs font-normal">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => setFormData({ ...formData, role: value })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
+            {/* Role Select */}
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={(val) => {
+                  setRole(val);
+                  const rolePerms = ROLE_PERMISSIONS[val] || [];
+                  setPermissions(prev => {
+                    const next = { ...prev };
+                    Object.keys(next).forEach(k => next[k] = rolePerms.includes(k));
+                    return next;
+                  });
+              }}>
+                <SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <SelectPortal>
                   <SelectContent>
-                    <SelectItem value="Super Admin" className="text-xs">Super Admin</SelectItem>
-                    <SelectItem value="Admin" className="text-xs">Admin</SelectItem>
-                    <SelectItem value="Manager" className="text-xs">Manager</SelectItem>
-                    <SelectItem value="Staff" className="text-xs">Staff</SelectItem>
-                    <SelectItem value="User" className="text-xs">User</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="PanelUser">Panel User</SelectItem>
+                    <SelectItem value="Customer">Customer</SelectItem>
                   </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="status" className="text-xs font-normal">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active" className="text-xs">Active</SelectItem>
-                    <SelectItem value="inactive" className="text-xs">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
+                </SelectPortal>
+              </Select>
+            </div>
+
+            {/* Permissions */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Permissions</Label>
+              <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-gray-50">
+                <PermissionCheckbox permissionKey="dashboard" title="Dashboard" />
+                <PermissionCheckbox permissionKey="products" title="Products" />
+                <PermissionCheckbox permissionKey="orders" title="Orders" />
+                <PermissionCheckbox permissionKey="customers" title="Customers" />
+                <PermissionCheckbox permissionKey="userManagement" title="User Management" />
               </div>
             </div>
 
-            {/* Permissions Section */}
-            <div className="space-y-3 mt-5">
-              <Label className="text-xs font-normal text-red-500">* Permissions & Access</Label>
-              
-              <div className="space-y-4">
-                {categoryPermissions.map((category, idx) => (
-                  <div key={idx} className="space-y-2">
-                    {category.category && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-gray-700 font-semibold min-w-[180px]">{category.category}</p>
-                        <div className="h-px bg-gray-200 flex-1"></div>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                      {category.items.map((itemId) => {
-                        const permission = permissions.find(p => p.id === itemId);
-                        if (!permission) return null;
-                        
-                        return (
-                          <div key={permission.id} className="flex items-start gap-2">
-                            <Checkbox
-                              id={permission.id}
-                              checked={permission.checked}
-                              onCheckedChange={() => handlePermissionToggle(permission.id)}
-                              className="mt-0.5 h-4 w-4 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                            />
-                            <div className="flex-1">
-                              <Label
-                                htmlFor={permission.id}
-                                className="cursor-pointer text-xs font-normal leading-tight"
-                              >
-                                {permission.label}
-                              </Label>
-                              {permission.description && (
-                                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                                  {permission.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* ✨ FIXED TOGGLE: Visible button */}
+            <CustomToggle 
+              label={isActive ? "User is Active" : "User is Inactive"} 
+              checked={isActive} 
+              onChange={setIsActive} 
+            />
+            
+            <div className="pt-4 border-t flex justify-end gap-2">
+               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Save Changes</Button>
             </div>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="h-9 text-xs px-4"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="edit-user-form"
-            className="bg-blue-600 hover:bg-blue-700 h-9 text-xs px-4"
-          >
-            Update
-          </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,37 +1,58 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+// ✨ REMOVED: X icon import (Dialog handles it)
+import { ChevronDown, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectPortal,
+} from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
-import { X } from "lucide-react";
-// ✨ REMOVED: import { addUserToSystem } from "../../lib/auth";
+import { ROLE_PERMISSIONS } from "../../lib/rolePermissions";
 
 export function AddUserModal({ open, onOpenChange, onSave }) {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    password: "",
     phone: "",
-    role: "User",
+    password: "",
+    role: "PanelUser",
   });
 
+  // Initial permissions state
   const [permissions, setPermissions] = useState({
-    dashboard: true,
-    products: true,
-    orders: true,
-    customers: true,
-    deliveryStaff: false,
-    membership: false,
-    profile: true,
-    // ... set defaults for others as false
+    dashboard: false, products: false, orders: false, customers: false,
+    deliveryStaff: false, membership: false, profile: false, analytics: false,
+    auditLogs: false, reports: false, userManagement: false, wallet: false,
+    billing: false, notifications: false, contentManagement: false,
+    homepage: false, settings: false, helpSupport: false, integrations: false,
+    apiAccess: false, security: false,
   });
+
+  // Update permissions when role changes
+  useEffect(() => {
+    const rolePerms = ROLE_PERMISSIONS[formData.role] || [];
+    setPermissions(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(key => {
+        next[key] = rolePerms.includes(key);
+      });
+      return next;
+    });
+  }, [formData.role]);
 
   const handlePermissionChange = useCallback((key) => {
     setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -39,99 +60,92 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // ✨ FIX: Split "Full Name" into "firstName" and "lastName" for the API
-    const nameParts = formData.name.trim().split(/\s+/);
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    // ✨ FIX: Convert permissions object to array of strings
     const permissionsArray = Object.keys(permissions).filter(key => permissions[key]);
 
     const newUser = {
-      firstName,
-      lastName,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
       password: formData.password,
-      role: formData.role, // Note: Backend might ignore this if not in schema, but we send it
       permissions: permissionsArray,
-      // isActive will be handled by backend default
+      role: formData.role, 
+      isActive: true
     };
 
-    // ✨ Send data to parent (UserManagement.jsx) to handle the API call
     onSave(newUser);
-    
     onOpenChange(false);
-
-    // Reset form
-    setFormData({ name: "", email: "", password: "", phone: "", role: "User" });
+    setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "PanelUser" });
   };
 
-  const PermissionCheckbox = ({ permissionKey, title, description }) => (
-    <div className="flex items-start gap-2">
+  const PermissionCheckbox = ({ permissionKey, title }) => (
+    <div className="flex items-center space-x-2">
       <Checkbox
         id={permissionKey}
-        checked={permissions[permissionKey] || false}
+        checked={permissions[permissionKey]}
         onCheckedChange={() => handlePermissionChange(permissionKey)}
-        className="mt-0.5 h-4 w-4 data-[state=checked]:bg-blue-600"
+        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
       />
-      <div className="flex-1">
-        <Label htmlFor={permissionKey} className="cursor-pointer text-xs font-normal">{title}</Label>
-        {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
-      </div>
+      <Label htmlFor={permissionKey} className="text-sm font-normal cursor-pointer">
+        {title}
+      </Label>
     </div>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 bg-white gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-4 border-b">
+      {/* ✨ REMOVED: overflow-hidden from DialogContent to allow dropdowns to pop out */}
+      <DialogContent className="sm:max-w-[600px] bg-white flex flex-col max-h-[90vh] p-0 gap-0">
+        
+        {/* ✨ CLEANER HEADER: Removed manual X button */}
+        <DialogHeader className="px-6 py-4 border-b bg-white sticky top-0 z-10">
           <DialogTitle className="text-base font-medium">Add New User</DialogTitle>
-          <DialogDescription className="sr-only">Add a new user to the system</DialogDescription>
+          <DialogDescription className="sr-only">Create a new user.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <form id="add-user-form" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <Label className="text-xs">Full Name</Label>
-                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter full name" required className="text-xs h-9 mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs">Email Address</Label>
-                <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Enter email" required className="text-xs h-9 mt-1" />
-              </div>
+        <form onSubmit={handleSubmit} className="flex-1 p-6 overflow-y-auto">
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label htmlFor="firstName">First Name</Label><Input id="firstName" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required /></div>
+              <div className="space-y-2"><Label htmlFor="lastName">Last Name</Label><Input id="lastName" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <Label className="text-xs">Password</Label>
-                <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter password" required className="text-xs h-9 mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs">Phone Number</Label>
-                <Input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Enter phone" className="text-xs h-9 mt-1" />
-              </div>
+            <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required /></div>
+            <div className="space-y-2"><Label htmlFor="phone">Phone</Label><Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required /></div>
+            <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required /></div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <SelectPortal>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="PanelUser">Panel User</SelectItem>
+                    <SelectItem value="Customer">Customer</SelectItem>
+                  </SelectContent>
+                </SelectPortal>
+              </Select>
             </div>
 
-            <div className="mb-4">
-              <h4 className="text-xs font-medium mb-3 text-red-600">* Permissions & Access</h4>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <PermissionCheckbox permissionKey="dashboard" title="Dashboard" />
-                  <PermissionCheckbox permissionKey="products" title="Products" />
-                  <PermissionCheckbox permissionKey="orders" title="Orders" />
-                  <PermissionCheckbox permissionKey="customers" title="Customers" />
-                  <PermissionCheckbox permissionKey="users" title="User Management" />
-                  {/* Add other permissions as needed */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Permissions</Label>
+              <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-gray-50">
+                <PermissionCheckbox permissionKey="dashboard" title="Dashboard" />
+                <PermissionCheckbox permissionKey="products" title="Products" />
+                <PermissionCheckbox permissionKey="orders" title="Orders" />
+                <PermissionCheckbox permissionKey="customers" title="Customers" />
+                <PermissionCheckbox permissionKey="userManagement" title="User Management" />
+                <PermissionCheckbox permissionKey="settings" title="Settings" />
+                <PermissionCheckbox permissionKey="reports" title="Reports" />
               </div>
             </div>
-          </form>
-        </div>
-
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t bg-gray-50">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="h-9 text-xs">Cancel</Button>
-          <Button type="submit" form="add-user-form" className="bg-blue-600 hover:bg-blue-700 h-9 text-xs">Add User</Button>
-        </div>
+          </div>
+          
+          <div className="mt-6 pt-4 border-t flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Add User</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
