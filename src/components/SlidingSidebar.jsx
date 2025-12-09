@@ -1,83 +1,94 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  Users, 
-  UserCog, 
-  Bike, 
-  Wallet, 
-  Crown, 
-  Layout, 
-  Settings, 
-  User, 
-  LogOut, 
-  ChevronDown, 
-  HelpCircle,
-  FolderOpen,
-  BarChart3,
-  Bell
+  LayoutDashboard, ShoppingCart, Package, Users, UserCog, Bike, 
+  Wallet, Crown, Layout, Settings, User, LogOut, ChevronDown, 
+  HelpCircle, FolderOpen, BarChart3, Bell
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
-const menuGroups = [
+// Define the menu structure
+const MENU_STRUCTURE = [
   {
     title: 'Main',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
+      // Dashboard is public (no permission key)
+      { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' }, 
     ]
   },
   {
     title: 'Management',
     items: [
-      { icon: ShoppingCart, label: 'Orders', id: 'orders' },
-      { icon: Package, label: 'Products', id: 'products' },
-      { icon: FolderOpen, label: 'Category Management', id: 'category-management' },
-      { icon: Users, label: 'Customers', id: 'customers' },
-      { icon: Bike, label: 'Delivery Staff', id: 'delivery-staff' },
-      { icon: UserCog, label: 'User Management', id: 'user-management' },
-      { icon: Wallet, label: 'Wallet', id: 'wallet' },
-      { icon: Crown, label: 'Membership', id: 'membership' },
-      { icon: BarChart3, label: 'Reports', id: 'reports' },
+      { icon: ShoppingCart, label: 'Orders', id: 'orders', permission: 'orders' },
+      { icon: Package, label: 'Products', id: 'products', permission: 'products' },
+      { icon: FolderOpen, label: 'Category Management', id: 'category-management', permission: 'categoryManagement' },
+      { icon: Users, label: 'Customers', id: 'customers', permission: 'customers' },
+      { icon: Bike, label: 'Delivery Staff', id: 'delivery-staff', permission: 'deliveryStaff' },
+      { icon: UserCog, label: 'User Management', id: 'user-management', permission: 'userManagement' },
+      { icon: Wallet, label: 'Wallet', id: 'wallet', permission: 'wallet' },
+      { icon: Crown, label: 'Membership', id: 'membership', permission: 'membership' },
+      { icon: BarChart3, label: 'Reports', id: 'reports', permission: 'reports' },
     ]
   },
   {
     title: 'CMS',
     items: [
-      { icon: Layout, label: 'Home Page', id: 'home-page' },
-      { icon: Bell, label: 'Push Notifications', id: 'notifications' },
+      { icon: Layout, label: 'Home Page', id: 'home-page', permission: 'homepage' },
+      { icon: Bell, label: 'Push Notifications', id: 'notifications', permission: 'notifications' },
     ]
   },
   {
     title: 'Settings',
     items: [
-      { icon: Settings, label: 'Settings', id: 'updated-settings' },
+      // Settings group is public (no permission key)
+      { icon: Settings, label: 'Settings', id: 'updated-settings' }, 
       { icon: User, label: 'Profile', id: 'profile' },
       { icon: HelpCircle, label: 'Help & Support', id: 'help-support' },
     ]
   }
 ];
 
-export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole = "Admin" }) {
+export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole = "Admin", currentUser }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openGroups, setOpenGroups] = useState({
-    'Main': true,
-    'Management': true,
-    'CMS': true,
-    'Settings': true
+    'Main': true, 'Management': true, 'CMS': true, 'Settings': true
   });
 
   const toggleGroup = (title) => {
-    setOpenGroups(prev => ({
-      ...prev,
-      [title]: !prev[title]
-    }));
+    setOpenGroups(prev => ({ ...prev, [title]: !prev[title] }));
   };
+
+  // ✨ UPDATED FILTER LOGIC
+  const filteredMenuGroups = useMemo(() => {
+    const userPerms = currentUser?.permissions || [];
+    
+    // Normalize role string (handle case sensitivity)
+    const currentRole = (userRole || '').toLowerCase();
+    const isAdmin = currentRole === 'admin' || currentRole === 'super admin';
+
+    return MENU_STRUCTURE.map(group => {
+      // Filter items in this group
+      const visibleItems = group.items.filter(item => {
+        // 1. If Admin/Super Admin, show EVERYTHING
+        if (isAdmin) return true;
+
+        // 2. If item has NO permission key (like Dashboard/Settings), show it to everyone
+        if (!item.permission) return true;
+        
+        // 3. For other roles (PanelUser), check if specific permission exists
+        return userPerms.includes(item.permission);
+      });
+
+      // Return group only if it has visible items
+      if (visibleItems.length > 0) {
+        return { ...group, items: visibleItems };
+      }
+      return null;
+    }).filter(Boolean); 
+  }, [currentUser, userRole]);
 
   return (
     <div 
       className={cn(
-        // ✨ FIX: Added 'bg-white' explicitly and 'shadow-xl' for better separation
         "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 flex flex-col shadow-lg",
         isExpanded ? "w-64" : "w-20"
       )}
@@ -85,7 +96,6 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
       onMouseLeave={() => setIsExpanded(false)}
     >
       {/* Header */}
-      {/* ✨ FIX: Added 'bg-white' and 'z-20' to ensure header stays on top and solid */}
       <div className="p-4 border-b border-gray-100 flex items-center h-20 flex-shrink-0 overflow-hidden bg-white z-20 relative">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm z-10 relative">
           <span className="text-white font-bold text-xl">D</span>
@@ -101,9 +111,8 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
       </div>
 
       {/* Navigation */}
-      {/* ✨ FIX: Added 'bg-white' to nav container */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 custom-scrollbar bg-white relative z-10">
-        {menuGroups.map((group) => (
+        {filteredMenuGroups.map((group) => (
           <div key={group.title} className="mb-2">
             {/* Group Header */}
             <div className={cn(

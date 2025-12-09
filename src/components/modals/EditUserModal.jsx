@@ -60,7 +60,7 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
   const [role, setRole] = useState("PanelUser");
   
   const [permissions, setPermissions] = useState({
-    dashboard: false, products: false, orders: false, customers: false,
+    dashboard: false, products: false, categoryManagement: false, orders: false, customers: false,
     userManagement: false, settings: false, reports: false, 
   });
 
@@ -150,6 +150,7 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
                   <SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger>
                   {/* ✨ FIX: Z-Index [9999] makes it clickable */}
                   <SelectContent className="z-[9999]">
+                    <SelectItem value="Super Admin">Super Admin</SelectItem>
                     <SelectItem value="Admin">Admin</SelectItem>
                     <SelectItem value="PanelUser">Panel User</SelectItem>
                     <SelectItem value="Customer">Customer</SelectItem>
@@ -160,6 +161,8 @@ export function EditUserModal({ open, onOpenChange, onSave, user }) {
               <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-gray-50">
                 <PermissionCheckbox permissionKey="dashboard" title="Dashboard" />
                 <PermissionCheckbox permissionKey="products" title="Products" />
+                {/* ✨ ADDED: Category Management permission */}
+                <PermissionCheckbox permissionKey="categoryManagement" title="Category Management" />
                 <PermissionCheckbox permissionKey="orders" title="Orders" />
                 <PermissionCheckbox permissionKey="customers" title="Customers" />
                 <PermissionCheckbox permissionKey="userManagement" title="User Management" />

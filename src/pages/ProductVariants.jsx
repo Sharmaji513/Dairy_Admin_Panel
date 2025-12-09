@@ -100,7 +100,7 @@ export function ProductVariants() {
                 <TableRow key={variant._id || index}>
                   <TableCell>
                     <div className="h-12 w-12 rounded-lg border overflow-hidden bg-gray-50">
-                      <ImageWithFallback src={variant.image} alt={variant.label} className="h-full w-full object-cover" />
+                      <ImageWithFallback src={variant.image} alt={variant.label} className="h-full w-full object-cover product-image" />
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{variant.label}</TableCell>

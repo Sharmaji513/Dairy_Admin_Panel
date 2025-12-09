@@ -262,6 +262,21 @@
     height: auto;
   }
 
+  /* Smooth image rendering globally */
+  img {
+    image-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+
+  /* Prevent image pixelation on scale */
+  .product-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
   button, input, select, optgroup, textarea {
     font: inherit;
     font-feature-settings: inherit;

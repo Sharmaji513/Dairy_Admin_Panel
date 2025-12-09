@@ -170,7 +170,7 @@ export function CategoryManagement() {
                      <ImageWithFallback 
                         src={cat.image} 
                         alt={cat.name} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover product-image"
                      />
                   ) : (
                      <FolderOpen className="h-8 w-8 text-blue-600" />

@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Plus, Trash2, Link as LinkIcon, X, ChevronDown, ChevronUp, Image as ImageIcon, Check } from 'lucide-react';
+import { Upload, Plus, Trash2, Link as LinkIcon, X, Check, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+// ✨ REMOVED: Custom Select imports to avoid Z-Index bugs
 import { toast } from 'sonner@2.0.3';
 import { useNavigate } from 'react-router-dom';
 import { categoryService } from '../../lib/api/services/categoryService';
-import { Switch } from '../ui/switch';
-import { Checkbox } from '../ui/checkbox';
 
 // --- HELPER COMPONENTS ---
 
@@ -183,147 +181,26 @@ function TagInput({ label, tags, onChange, placeholder }) {
     );
 }
 
-function VariantRow({ index, variant, onChange, onRemove, onImageChange }) {
-  return (
-    <div className="border p-4 rounded-xl mb-4 bg-white shadow-sm relative group">
-       <Button 
-         variant="ghost" 
-         size="icon" 
-         onClick={() => onRemove(index)} 
-         className="absolute top-2 right-2 text-gray-400 hover:text-red-500 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-       >
-         <Trash2 className="h-4 w-4"/>
-       </Button>
-
-       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-4">
-             <ImageInput 
-               label={`Variant Image`}
-               imageData={variant.imageData}
-               onChange={(data) => onImageChange(index, data)}
-               className="h-32"
-             />
-          </div>
-
-          <div className="md:col-span-8 grid grid-cols-2 gap-4 content-start">
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs font-medium">Label <span className="text-red-500">*</span></Label>
-                <Input value={variant.label} onChange={(e) => onChange(index, 'label', e.target.value)} placeholder="e.g. Family Pack" className="h-9 text-xs" />
-              </div>
-              
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Value <span className="text-red-500">*</span></Label>
-                <Input type="number" value={variant.value} onChange={(e) => onChange(index, 'value', e.target.value)} placeholder="500" className="h-9 text-xs" />
-              </div>
-              
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Unit <span className="text-red-500">*</span></Label>
-                {/* High Z-Index for Dropdown */}
-                <Select value={variant.unit} onValueChange={(val) => onChange(index, 'unit', val)}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="ml">ml</SelectItem>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="gm">gm</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Stock <span className="text-red-500">*</span></Label>
-                <Input type="number" value={variant.stock} onChange={(e) => onChange(index, 'stock', e.target.value)} placeholder="0" className="h-9 text-xs" />
-              </div>
-              
-              <div className="space-y-1">
-                 <Label className="text-xs font-medium">Price (₹) <span className="text-red-500">*</span></Label>
-                 <Input type="number" value={variant.price} onChange={(e) => onChange(index, 'price', e.target.value)} placeholder="0" className="h-9 text-xs font-medium" />
-              </div>
-          </div>
-       </div>
-    </div>
-  );
-}
-
 // --- MAIN COMPONENT ---
 
 export function AddProductModal({ open, onClose, onAdd, categories = [], onCategoryCreate }) {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    price: '',
-    originalPrice: '',
-    cost: '',
-    stock: '',
-    volume: '',
-    discountPercent: '',
-    isVIP: false,
-    description: '',
-    mainImage: null, 
-    availableForOrder: true,
-    vegetarian: false,
-    benefits: [],
-    attributes: [],
+    name: '', category: '', price: '', originalPrice: '', cost: '', stock: '', volume: '',
+    discountPercent: '', isVIP: false, description: '', mainImage: null, 
+    availableForOrder: true, vegetarian: false, benefits: [], attributes: [],
   });
 
-  const [variants, setVariants] = useState([]);
-  const [variantsOpen, setVariantsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     if (!open) {
       setFormData({ name: '', category: '', price: '', originalPrice: '', cost: '', stock: '', volume: '', discountPercent: '', isVIP: false, description: '', mainImage: null, availableForOrder: true, vegetarian: false, benefits: [], attributes: [] });
-      setVariants([]);
-      setVariantsOpen(false);
     }
   }, [open]);
 
   const handleMainImageChange = (data) => setFormData(prev => ({ ...prev, mainImage: data }));
-
-  const handleVariantChange = (index, field, value) => {
-    const newVariants = [...variants];
-    newVariants[index][field] = value;
-    setVariants(newVariants);
-  };
-
-  const handleVariantImageChange = (index, data) => {
-    const newVariants = [...variants];
-    newVariants[index].imageData = data;
-    setVariants(newVariants);
-  };
-
-  const addVariant = () => {
-    if (!variantsOpen) setVariantsOpen(true);
-    setVariants([...variants, { label: '', value: '', unit: 'ml', price: '', stock: '', imageData: null }]);
-  };
-
-  const removeVariant = (index) => {
-    setVariants(variants.filter((_, i) => i !== index));
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error("Category name cannot be empty");
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await categoryService.createCategory({ name: newCategoryName, displayName: newCategoryName });
-      const newCategory = response.category || response.data;
-      toast.success(`Category "${newCategory.name}" created!`);
-      if (onCategoryCreate) onCategoryCreate();
-      setFormData(prev => ({ ...prev, category: newCategory._id || newCategory.id }));
-      setIsCreatingCategory(false);
-      setNewCategoryName('');
-    } catch (error) {
-      toast.error("Failed to create category");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -333,69 +210,61 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
     }
     
     setLoading(true);
-    try {
-      await onAdd({ ...formData, variants }); 
-      onClose();
-    } catch (error) {
-      // Error handled by parent
-    } finally {
-      setLoading(false);
-    }
+    try { 
+        // ✨ Removed 'variants' from the data sent to parent
+        await onAdd({ ...formData }); 
+        onClose(); 
+    } catch (error) { } finally { setLoading(false); }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      {/* Use block layout for reliable scrolling */}
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white border shadow-lg p-0 block">
         
-        <DialogHeader className="bg-white px-6 py-4 border-b sticky top-0 z-50">
+        <DialogHeader className="bg-white px-6 py-4 border-b sticky top-0 z-10">
           <DialogTitle className="text-xl font-bold text-gray-800">Add New Product</DialogTitle>
         </DialogHeader>
 
         <div className="p-6">
-          {isCreatingCategory ? (
-            <div className="space-y-4 py-4 border p-4 rounded-lg bg-white shadow-sm">
-              <h3 className="font-medium text-sm">Create New Category</h3>
-              <Input placeholder="Enter category name" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} />
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={() => setIsCreatingCategory(false)}>Cancel</Button>
-                <Button size="sm" onClick={handleCreateCategory} disabled={loading}>Create</Button>
-              </div>
-            </div>
-          ) : (
             <form id="product-form" onSubmit={handleSubmit} className="space-y-6">
               
               {/* Image Section */}
               <div className="w-full">
-                  <ImageInput 
-                      label="Product Image" 
-                      imageData={formData.mainImage} 
-                      onChange={handleMainImageChange}
-                      className="h-full" 
-                  />
+                  <ImageInput label="Product Image" imageData={formData.mainImage} onChange={handleMainImageChange} className="h-full" />
               </div>
 
               {/* Main Fields */}
               <div className="space-y-4 bg-white p-4 rounded-lg border shadow-sm">
                   <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1"><Label className="text-xs font-semibold">Product Name <span className="text-red-500">*</span></Label><Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Butter Chicken" className="h-9 text-xs" /></div>
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Category <span className="text-red-500">*</span></Label>
-                          <Select 
-                          value={formData.category} 
-                          onValueChange={(value) => {
-                              if (value === 'create_new') navigate('/category-management?action=create');
-                              else setFormData({ ...formData, category: value });
-                          }}
-                          >
-                          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                          {/* FIX: Z-Index 9999 for dropdown */}
-                          <SelectContent className="z-[9999]">
-                              {categories.map((cat) => (
-                              <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>{cat.displayName || cat.name}</SelectItem>
-                              ))}
-                              <SelectItem value="create_new" className="text-blue-600 border-t"><Plus className="h-3 w-3 inline mr-1"/> New Category</SelectItem>
-                          </SelectContent>
-                          </Select>
+                      <div className="space-y-1">
+                          <Label className="text-xs font-semibold">Category <span className="text-red-500">*</span></Label>
+                          {/* ✨ FIXED: Native Select to prevent click issues */}
+                          <div className="relative">
+                            <select
+                                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-white"
+                                value={formData.category}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'create_new') {
+                                        navigate('/category-management'); // Redirects to category page
+                                    } else {
+                                        setFormData({ ...formData, category: val });
+                                    }
+                                }}
+                            >
+                                <option value="" disabled>Select Category</option>
+                                {categories.map((cat) => (
+                                    <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                                        {cat.displayName || cat.name}
+                                    </option>
+                                ))}
+                                <option value="create_new" className="text-blue-600 font-bold bg-blue-50">
+                                    + Add New Category
+                                </option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-3 h-3 w-3 opacity-50 pointer-events-none" />
+                          </div>
                       </div>
                   </div>
 
@@ -420,65 +289,14 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
                   </div>
               </div>
 
-              {/* Variants */}
-              <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
-                <div 
-                  className="flex justify-between items-center p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors border-b"
-                  onClick={() => setVariantsOpen(!variantsOpen)}
-                >
-                  <div className="flex items-center gap-2">
-                      {variantsOpen ? <ChevronUp className="h-4 w-4 text-gray-600"/> : <ChevronDown className="h-4 w-4 text-gray-600"/>}
-                      <Label className="text-sm font-bold cursor-pointer text-gray-700">Variants / Quantities</Label>
-                      <span className="text-xs text-muted-foreground bg-white px-2 py-0.5 rounded-full border">{variants.length} added</span>
-                  </div>
-                  <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); addVariant(); }} className="h-7 text-xs bg-white hover:bg-blue-50 text-blue-600 border-blue-200">
-                      <Plus className="h-3 w-3 mr-1"/> Add Variant
-                  </Button>
-                </div>
-                
-                {variantsOpen && (
-                  <div className="p-4 space-y-4 bg-gray-50/30">
-                    {variants.length === 0 && <p className="text-xs text-center text-muted-foreground py-2">No variants added yet.</p>}
-                    {variants.map((variant, index) => (
-                      <VariantRow 
-                        key={index} 
-                        index={index} 
-                        variant={variant} 
-                        onChange={handleVariantChange} 
-                        onRemove={removeVariant}
-                        onImageChange={handleVariantImageChange} 
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* ✨ REMOVED: Variants Section */}
 
               {/* Toggles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomToggle 
-                  label="Available for Order" 
-                  checked={formData.availableForOrder} 
-                  onChange={(c) => setFormData({...formData, availableForOrder: c})}
-                  activeColor="bg-green-500"
-                  icon={Check}
-                />
-                
-                <CustomToggle 
-                  label="VIP Only Product" 
-                  checked={formData.isVIP} 
-                  onChange={(c) => setFormData({...formData, isVIP: c})}
-                  activeColor="bg-purple-500"
-                  icon={Plus} // Or Crown
-                />
+                <CustomToggle label="Available for Order" checked={formData.availableForOrder} onChange={(c) => setFormData({...formData, availableForOrder: c})} activeColor="bg-green-500" icon={Check} />
+                <CustomToggle label="VIP Only Product" checked={formData.isVIP} onChange={(c) => setFormData({...formData, isVIP: c})} activeColor="bg-purple-500" icon={Plus} />
               </div>
-              
-               <div className="flex items-center space-x-3 bg-white p-3 rounded-lg border shadow-sm w-fit">
-                <Checkbox id="veg" checked={formData.vegetarian} onCheckedChange={(c) => setFormData({...formData, vegetarian: c})} />
-                <Label htmlFor="veg" className="text-xs font-medium cursor-pointer">Vegetarian</Label>
-              </div>
-
             </form>
-          )}
         </div>
 
         {/* Footer */}

@@ -94,6 +94,8 @@ function DashboardLayout({ currentUser, handleLogout, handleProfileUpdate }) {
         currentPage={currentPage}
         onPageChange={handleNavigation}
         onLogout={handleLogout}
+        // ✨ PASS THE FULL USER OBJECT (contains permissions)
+        currentUser={currentUser}
         userRole={currentUser?.role || "User"}
       />
       <div className="flex flex-col h-full ml-20">

@@ -71,10 +71,44 @@ export function UserManagement() {
         <div className="flex gap-3"><Button variant="outline"><Download className="h-4 w-4 mr-2" /> Export</Button><Button className="bg-red-500 hover:bg-red-600" onClick={() => setAddModalOpen(true)}><UserPlus className="h-4 w-4 mr-2" /> Add User</Button></div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card className="p-6 flex justify-between"><div><p className="text-sm text-muted-foreground mb-2">Total Users</p><h3 className="text-2xl">{totalUsers}</h3></div><div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center"><UsersIcon className="h-6 w-6 text-blue-500" /></div></Card>
-        <Card className="p-6 flex justify-between"><div><p className="text-sm text-muted-foreground mb-2">Admin Users</p><h3 className="text-2xl">{adminUsers}</h3></div><div className="h-12 w-12 bg-purple-50 rounded-full flex items-center justify-center"><UserCheck className="h-6 w-6 text-purple-500" /></div></Card>
-        <Card className="p-6 flex justify-between"><div><p className="text-sm text-muted-foreground mb-2">Active Users</p><h3 className="text-2xl">{activeUsers}</h3></div><div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center"><UserCheck className="h-6 w-6 text-green-500" /></div></Card>
+      {/* Statistics Cards */}
+      {/* ✨ UPDATED: Standardized sizing to match other pages */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="p-4 transition-all duration-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1 font-bold">Total Users</p>
+              <h3 className="text-lg">{totalUsers}</h3>
+            </div>
+            <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center">
+              <UsersIcon className="h-4 w-4 text-blue-500" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-4 transition-all duration-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1 font-bold">Admin Users</p>
+              <h3 className="text-lg">{adminUsers}</h3>
+            </div>
+            <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center">
+              <UserCheck className="h-4 w-4 text-purple-500" />
+            </div>
+          </div>
+        </Card>
+        
+        <Card className="p-4 transition-all duration-200 hover:shadow-md">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1 font-bold">Active Users</p>
+              <h3 className="text-lg">{activeUsers}</h3>
+            </div>
+            <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
+              <UserCheck className="h-4 w-4 text-green-500" />
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Filters & Table - ✨ RESTORED ORIGINAL LAYOUT */}

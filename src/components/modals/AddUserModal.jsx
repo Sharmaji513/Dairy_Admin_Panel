@@ -32,7 +32,7 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
 
   // Initial permissions state
   const [permissions, setPermissions] = useState({
-    dashboard: false, products: false, orders: false, customers: false,
+    dashboard: false, products: false, categoryManagement: false, orders: false, customers: false,
     deliveryStaff: false, membership: false, profile: false, analytics: false,
     auditLogs: false, reports: false, userManagement: false, wallet: false,
     billing: false, notifications: false, contentManagement: false,
@@ -115,6 +115,7 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
                 <SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger>
                 {/* ✨ FIX: Z-Index [9999] makes it clickable */}
                 <SelectContent className="z-[9999]">
+                  <SelectItem value="Super Admin">Super Admin</SelectItem>
                   <SelectItem value="Admin">Admin</SelectItem>
                   <SelectItem value="PanelUser">Panel User</SelectItem>
                   <SelectItem value="Customer">Customer</SelectItem>
@@ -127,6 +128,8 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
               <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-gray-50">
                 <PermissionCheckbox permissionKey="dashboard" title="Dashboard" />
                 <PermissionCheckbox permissionKey="products" title="Products" />
+                {/* ✨ ADDED: Category Management permission */}
+                <PermissionCheckbox permissionKey="categoryManagement" title="Category Management" />
                 <PermissionCheckbox permissionKey="orders" title="Orders" />
                 <PermissionCheckbox permissionKey="customers" title="Customers" />
                 <PermissionCheckbox permissionKey="userManagement" title="User Management" />
