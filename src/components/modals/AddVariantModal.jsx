@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 
 function ImageInput({ label, imageData, onChange, className = '' }) {
   const [inputType, setInputType] = useState('file');
@@ -66,18 +67,29 @@ function ImageInput({ label, imageData, onChange, className = '' }) {
         </div>
       </div>
       {imageData ? (
-        <div className="relative w-full h-32 border rounded-lg overflow-hidden group bg-gray-50 z-0">
-          <img src={imageData.preview} alt="Preview" className="w-full h-full object-contain" />
+        <div className="relative w-full h-20 border rounded-lg overflow-hidden group bg-gray-50">
+          <img 
+            src={imageData.preview} 
+            alt="Preview" 
+            className="w-full h-full object-cover transition-all duration-300 ease-in-out hover:scale-105 pointer-events-none" 
+            style={{ imageRendering: 'auto' }}
+          />
           <button
             type="button"
-            onClick={clearImage}
-            className="absolute top-2 right-2 p-1 bg-white/90 text-red-500 rounded-full hover:bg-red-50 shadow-sm border transition-opacity opacity-0 group-hover:opacity-100"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              clearImage();
+            }}
+            className="absolute top-2 right-2 z-30 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg border-2 border-white transition-all duration-200 hover:scale-110 cursor-pointer"
+            style={{ pointerEvents: 'auto' }}
           >
             <X className="h-4 w-4" />
           </button>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
         </div>
       ) : (
-        <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden z-0">
+        <div className="w-full h-20 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden z-0">
           {inputType === 'file' ? (
             <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center p-4">
               <Upload className="w-6 h-6 mb-2 text-gray-400" />
@@ -140,12 +152,13 @@ export function AddVariantModal({ open, onClose, onAdd, productName }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-white p-0 block">
+      <DialogContent className="sm:max-w-[500px] bg-white p-0 block max-h-[85vh] overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle>Add Variant for: {productName}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="max-h-[calc(85vh-80px)] overflow-y-auto px-6 py-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
             {/* Image Section */}
             <div>
@@ -190,18 +203,25 @@ export function AddVariantModal({ open, onClose, onAdd, productName }) {
                 <Label className="text-xs font-medium">
                   Unit <span className="text-red-500">*</span>
                 </Label>
-                <Select value={variantData.unit} onValueChange={(val) => handleChange('unit', val)}>
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="ml">ml</SelectItem>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="gm">gm</SelectItem>
-                    <SelectItem value="L">L</SelectItem>
-                    <SelectItem value="pcs">pcs</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ToggleGroup 
+                  type="single" 
+                  value={variantData.unit} 
+                  onValueChange={(value) => value && handleChange('unit', value)}
+                  className="justify-start gap-1"
+                >
+                  <ToggleGroupItem value="ml" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
+                    ml
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="litre" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
+                    litre
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="gm" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
+                    gm
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="kg" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
+                    kg
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
 
               <div className="space-y-1">
@@ -243,6 +263,7 @@ export function AddVariantModal({ open, onClose, onAdd, productName }) {
             </Button>
           </div>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

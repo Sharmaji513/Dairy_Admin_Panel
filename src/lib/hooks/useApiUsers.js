@@ -1,109 +1,88 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { userService } from '../api/services/userService';
-import { API_CONFIG } from '../api/config';
-import { users as defaultUsers } from '../mockData';
+import { toast } from 'sonner@2.0.3';
 
-export function useApiUsers(filters) {
+export function useApiUsers(filters = {}) {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchUsers = async () => {
-    if (!API_CONFIG.ENABLE_API) {
-      setUsers(defaultUsers);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const fetchUsers = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await userService.getUsers(filters);
       
-      // Handle response structure
-      const usersList = response.users || (response.data && response.data.users) || response.data || [];
+      // Handle different response structures (e.g., [users] or { users: [...] } or { data: [...] })
+      let data = [];
+      if (Array.isArray(response)) {
+        data = response;
+      } else if (response.users && Array.isArray(response.users)) {
+        data = response.users;
+      } else if (response.data && Array.isArray(response.data)) {
+        data = response.data;
+      }
 
-      const mappedUsers = Array.isArray(usersList) ? usersList.map(u => {
-        const isActive = (typeof u.isActive === 'boolean')
-          ? u.isActive
-          : (typeof u.status === 'string')
-            ? u.status.toLowerCase() === 'active'
-            : true; // default to true if neither present
-
-        const status = (typeof u.status === 'string')
-          ? u.status.toLowerCase()
-          : (isActive ? 'active' : 'inactive');
-
-        return {
-          ...u,
-          id: u._id || u.id,
-          name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim(),
-          isActive,
-          status,
-          role: u.role || 'Manager', // Default role if missing
-        };
-      }) : [];
-
-      setUsers(mappedUsers);
+      setUsers(data);
+      setError(null);
     } catch (err) {
-      console.error('Error fetching users:', err);
-      setError(err.message || 'Failed to fetch users');
+      console.error("Failed to fetch users:", err);
+      setError(err.message);
+      // Optional: don't toast on initial load to avoid spam, or toast only critical errors
     } finally {
       setLoading(false);
     }
-  };
+  }, [JSON.stringify(filters)]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const createUser = async (userData) => {
-    setLoading(true);
     try {
-      await userService.createUser(userData);
-      await fetchUsers();
+      const newUser = await userService.createUser(userData);
+      // Optimistic update or refetch
+      setUsers(prev => [newUser.user || newUser, ...prev]); 
+      return newUser;
     } catch (err) {
-      setError(err.message || 'Failed to create user');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const updateUser = async (id, userData) => {
-    setLoading(true);
     try {
-      await userService.updateUser(id, userData);
-      await fetchUsers();
+      const updated = await userService.updateUser(id, userData);
+      setUsers(prev => prev.map(u => (u.id === id || u._id === id) ? (updated.user || updated) : u));
+      return updated;
     } catch (err) {
-      setError(err.message || 'Failed to update user');
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
   const deleteUser = async (id) => {
-    setLoading(true);
     try {
       await userService.deleteUser(id);
-      await fetchUsers();
+      setUsers(prev => prev.filter(u => u.id !== id && u._id !== id));
     } catch (err) {
-      setError(err.message || 'Failed to delete user');
       throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const toggleUserStatus = async (id, currentStatus) => {
-    try {
-        await userService.toggleUserStatus(id, currentStatus);
-        await fetchUsers();
-    } catch(err) {
-        throw err;
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, [JSON.stringify(filters)]);
+  const toggleUserStatus = async (id, currentStatus) => {
+    try {
+      // Toggle logic
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const isActive = newStatus === 'active';
+      
+      // Optimistic update locally first for speed
+      setUsers(prev => prev.map(u => (u.id === id || u._id === id) ? { ...u, status: newStatus, isActive } : u));
+      
+      await userService.toggleUserStatus(id, currentStatus);
+    } catch (err) {
+      // Revert on failure
+      fetchUsers(); 
+      throw err;
+    }
+  };
 
   return {
     users,

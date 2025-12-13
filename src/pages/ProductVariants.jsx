@@ -17,7 +17,7 @@ export function ProductVariants() {
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const { products } = useApiProducts({ page: 1, limit: 1000 });
+  const { products, addVariantToProduct, deleteVariant } = useApiProducts({ page: 1, limit: 1000 });
 
   useEffect(() => {
     if (products && products.length > 0) {
@@ -32,24 +32,33 @@ export function ProductVariants() {
 
   const handleAddVariant = async (variantData) => {
     try {
+      await addVariantToProduct(id, variantData);
       toast.success('Variant added successfully');
       setIsAddModalOpen(false);
-      // Refresh variants list
-      const found = products.find(p => p.id === id);
-      if (found) {
-        setVariants(found.availableQuantities || []);
-      }
+      
+      // Force refresh the current product's variants
+      setTimeout(() => {
+        if (products && products.length > 0) {
+          const found = products.find(p => p.id === id);
+          if (found) {
+            setProduct(found);
+            setVariants(found.availableQuantities || []);
+          }
+        }
+      }, 500); // Small delay to ensure API has processed
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to add variant');
+      console.error('Error adding variant:', error);
+      toast.error(error.message || 'Failed to add variant');
     }
   };
 
   const handleDeleteVariant = async (variantId) => {
     if (!confirm('Are you sure you want to delete this variant?')) return;
     try {
-      toast.info('Delete variant functionality needs backend implementation');
+      await deleteVariant(id, variantId);
+      toast.success('Variant deleted successfully');
     } catch (error) {
+      console.error(error);
       toast.error('Failed to delete variant');
     }
   };

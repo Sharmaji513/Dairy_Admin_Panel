@@ -11,7 +11,7 @@ export const API_CONFIG = {
   BASE_URL: (VITE_API_BASE_URL || 'http://localhost:5000') + '/api',
 
   TIMEOUT: 30000,
-  ENABLE_API: true,
+  ENABLE_API: true, // Enabled to use backend API
 };
 
 export const API_ENDPOINTS = {
