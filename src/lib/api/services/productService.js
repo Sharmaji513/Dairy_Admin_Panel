@@ -115,27 +115,34 @@ export const productService = {
   },
 
   async addVariantToProduct(productId, variantData) {
-    const formData = new FormData();
-
-    // Append text fields
-    formData.append('label', variantData.label);
-    formData.append('value', variantData.value);
-    formData.append('unit', variantData.unit);
-    formData.append('price', variantData.price);
-    formData.append('stock', variantData.stock);
+    // Prepare the data for JSON request
+    const requestData = {
+      label: variantData.label,
+      value: parseFloat(variantData.value),
+      unit: variantData.unit,
+      price: parseFloat(variantData.price),
+      stock: parseInt(variantData.stock),
+    };
 
     // Handle image attachment
     if (variantData.imageData) {
       if (variantData.imageData.type === 'file') {
+        // For file uploads, we still need FormData
+        const formData = new FormData();
+        Object.keys(requestData).forEach(key => {
+          formData.append(key, requestData[key]);
+        });
         formData.append('image', variantData.imageData.value);
+        const url = buildUrl(API_ENDPOINTS.PRODUCTS.VARIANTS.CREATE, { id: productId });
+        return apiClient.post(url, formData);
       } else if (variantData.imageData.type === 'url') {
-        formData.append('imageUrl', variantData.imageData.value);
+        requestData.imageUrl = variantData.imageData.value;
       }
     }
 
-    // Construct URL: e.g., /products/123/variants
+    // Send as JSON for non-file uploads
     const url = buildUrl(API_ENDPOINTS.PRODUCTS.VARIANTS.CREATE, { id: productId });
-    return apiClient.post(url, formData);
+    return apiClient.post(url, requestData);
   },
 
   async deleteVariant(productId, variantId) {

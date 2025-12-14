@@ -68,7 +68,21 @@ class ApiClient {
     });
 
     if (!response.ok) return this.handleError(response);
-    return await response.json();
+    
+    // Handle empty response body (204 No Content or empty JSON)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return { success: true };
+    }
+    
+    // Try to parse JSON, but handle empty responses gracefully
+    try {
+      const text = await response.text();
+      return text ? JSON.parse(text) : { success: true };
+    } catch (err) {
+      // If JSON parsing fails, return success indicator
+      return { success: true };
+    }
   }
 
   // ✨ UPDATED POST METHOD ✨
@@ -87,7 +101,21 @@ class ApiClient {
     });
 
     if (!response.ok) return this.handleError(response);
-    return await response.json();
+    
+    // Handle empty response body (204 No Content or empty JSON)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return { success: true };
+    }
+    
+    // Try to parse JSON, but handle empty responses gracefully
+    try {
+      const text = await response.text();
+      return text ? JSON.parse(text) : { success: true };
+    } catch (err) {
+      // If JSON parsing fails, return success indicator
+      return { success: true };
+    }
   }
 
   // ✨ UPDATED PUT METHOD ✨
@@ -105,7 +133,21 @@ class ApiClient {
     });
 
     if (!response.ok) return this.handleError(response);
-    return await response.json();
+    
+    // Handle empty response body (204 No Content or empty JSON)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return { success: true };
+    }
+    
+    // Try to parse JSON, but handle empty responses gracefully
+    try {
+      const text = await response.text();
+      return text ? JSON.parse(text) : { success: true };
+    } catch (err) {
+      // If JSON parsing fails, return success indicator
+      return { success: true };
+    }
   }
 
   async delete(endpoint) {
@@ -115,7 +157,21 @@ class ApiClient {
     });
 
     if (!response.ok) return this.handleError(response);
-    return await response.json();
+    
+    // Handle empty response body (204 No Content or empty JSON)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return { success: true };
+    }
+    
+    // Try to parse JSON, but handle empty responses gracefully
+    try {
+      const text = await response.text();
+      return text ? JSON.parse(text) : { success: true };
+    } catch (err) {
+      // If JSON parsing fails, return success indicator
+      return { success: true };
+    }
   }
   
   async patch(endpoint, body) {
@@ -126,7 +182,21 @@ class ApiClient {
     });
 
     if (!response.ok) return this.handleError(response);
-    return await response.json();
+    
+    // Handle empty response body (204 No Content or empty JSON)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return { success: true };
+    }
+    
+    // Try to parse JSON, but handle empty responses gracefully
+    try {
+      const text = await response.text();
+      return text ? JSON.parse(text) : { success: true };
+    } catch (err) {
+      // If JSON parsing fails, return success indicator
+      return { success: true };
+    }
   }
 }
 

@@ -117,6 +117,28 @@ export function useApiProducts(filters) {
       }
   };
 
+  const addVariantToProduct = async (productId, variantData) => {
+      try {
+          const response = await productService.addVariantToProduct(productId, variantData);
+          await fetchProducts(); // Refresh products to get updated variants
+          return response;
+      } catch (err) {
+          setError(err.message || 'Failed to add variant');
+          throw err;
+      }
+  };
+
+  const deleteVariant = async (productId, variantId) => {
+      try {
+          const response = await productService.deleteVariant(productId, variantId);
+          await fetchProducts(); // Refresh products to get updated variants
+          return response;
+      } catch (err) {
+          setError(err.message || 'Failed to delete variant');
+          throw err;
+      }
+  };
+
   useEffect(() => {
     fetchProducts();
   }, [JSON.stringify(filters)]);
@@ -130,5 +152,7 @@ export function useApiProducts(filters) {
     createProduct,
     updateProduct,
     deleteProduct,
+    addVariantToProduct,
+    deleteVariant,
   };
 }
