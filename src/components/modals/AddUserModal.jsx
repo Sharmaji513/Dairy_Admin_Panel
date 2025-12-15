@@ -67,7 +67,7 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
       phone: formData.phone,
       password: formData.password,
       permissions: permissionsArray,
-      role: formData.role,
+      role: "PanelUser", 
       isActive: true
     };
 
@@ -111,7 +111,7 @@ export function AddUserModal({ open, onOpenChange, onSave }) {
             
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+              <Select value={formData.role} onValueChange={(value) => {console.log('Selected Role:', value); setFormData({ ...formData, role: value });}}>
                 <SelectTrigger id="role"><SelectValue placeholder="Select a role" /></SelectTrigger>
                 {/* ✨ FIX: Z-Index [9999] makes it clickable */}
                 <SelectContent className="z-[9999]">
