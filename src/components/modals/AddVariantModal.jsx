@@ -1,116 +1,113 @@
-import { useState, useEffect, useRef } from 'react';
-import { Upload, X, Link as LinkIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+import { useState, useEffect, useRef } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Upload, X, Link as LinkIcon } from "lucide-react";
 
-function ImageInput({ label, imageData, onChange, className = '' }) {
-  const [inputType, setInputType] = useState('file');
-  const [urlInput, setUrlInput] = useState('');
+// Image Input Component
+function ImageInput({ label, imageData, onChange }) {
+  const [inputType, setInputType] = useState("file");
+  const [urlInput, setUrlInput] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (imageData?.type === 'url') {
-      setInputType('url');
+    if (imageData?.type === "url") {
+      setInputType("url");
       setUrlInput(imageData.value);
+    } else {
+      setInputType("file");
     }
   }, [imageData]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const preview = URL.createObjectURL(file);
-      onChange({ type: 'file', value: file, preview });
-    }
+    if (!file) return;
+    onChange({ type: "file", value: file, preview: URL.createObjectURL(file) });
   };
 
   const handleUrlChange = (e) => {
     const url = e.target.value;
     setUrlInput(url);
-    if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-      onChange({ type: 'url', value: url, preview: url });
+    if (url.match(/\.(jpeg|jpg|png|webp)$/i)) {
+      onChange({ type: "url", value: url, preview: url });
     }
   };
 
   const clearImage = () => {
     onChange(null);
-    setUrlInput('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setUrlInput("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      <div className="flex items-center justify-between mb-1">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
         <Label className="text-xs font-semibold">{label}</Label>
         <div className="flex bg-gray-100 rounded-md p-0.5">
           <button
             type="button"
-            onClick={() => setInputType('file')}
-            className={`px-2 py-0.5 text-[10px] rounded transition-all ${
-              inputType === 'file' ? 'bg-white shadow text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-700'
+            onClick={() => setInputType("file")}
+            className={`px-2 py-0.5 text-[10px] rounded ${
+              inputType === "file"
+                ? "bg-white shadow text-blue-600 font-medium"
+                : "text-gray-500"
             }`}
           >
             Upload
           </button>
           <button
             type="button"
-            onClick={() => setInputType('url')}
-            className={`px-2 py-0.5 text-[10px] rounded transition-all ${
-              inputType === 'url' ? 'bg-white shadow text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-700'
+            onClick={() => setInputType("url")}
+            className={`px-2 py-0.5 text-[10px] rounded ${
+              inputType === "url"
+                ? "bg-white shadow text-blue-600 font-medium"
+                : "text-gray-500"
             }`}
           >
             Link
           </button>
         </div>
       </div>
+
       {imageData ? (
-        <div className="relative w-full h-20 border rounded-lg overflow-hidden group bg-gray-50">
-          <img 
-            src={imageData.preview} 
-            alt="Preview" 
-            className="w-full h-full object-cover transition-all duration-300 ease-in-out hover:scale-105 pointer-events-none" 
-            style={{ imageRendering: 'auto' }}
-          />
+        <div className="relative w-full border rounded-lg bg-gray-50 overflow-hidden" style={{ height: "128px" }}>
+          <img src={imageData.preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              clearImage();
-            }}
-            className="absolute top-2 right-2 z-30 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg border-2 border-white transition-all duration-200 hover:scale-110 cursor-pointer"
-            style={{ pointerEvents: 'auto' }}
+            onClick={clearImage}
+            className="absolute top-2 right-2 z-10 p-1 bg-white/90 text-red-500 rounded-full hover:bg-red-50"
           >
             <X className="h-4 w-4" />
           </button>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
         </div>
       ) : (
-        <div className="w-full h-20 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden z-0">
-          {inputType === 'file' ? (
-            <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center p-4">
+        <div
+          className="w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center"
+          style={{ height: "128px" }}
+        >
+          {inputType === "file" ? (
+            <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center">
               <Upload className="w-6 h-6 mb-2 text-gray-400" />
-              <span className="text-xs text-gray-500 font-medium">Click to upload</span>
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleFileChange}
-                ref={fileInputRef}
-              />
+              <span className="text-xs text-gray-500">Click to upload image</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} ref={fileInputRef} />
             </label>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-4 gap-2">
+            <div className="w-full px-4 flex flex-col items-center gap-2">
               <LinkIcon className="w-6 h-6 text-gray-400" />
-              <Input
-                placeholder="Paste link..."
-                value={urlInput}
-                onChange={handleUrlChange}
-                className="h-8 text-xs bg-white w-full max-w-[80%]"
-              />
+              <Input placeholder="Paste image URL" value={urlInput} onChange={handleUrlChange} className="h-8 text-xs" />
             </div>
           )}
         </div>
@@ -119,26 +116,36 @@ function ImageInput({ label, imageData, onChange, className = '' }) {
   );
 }
 
-export function AddVariantModal({ open, onClose, onAdd, productName }) {
+// Main Modal
+export function AddVariantModal({ open, onClose, onAdd, productName, initialData }) {
   const [loading, setLoading] = useState(false);
   const [variantData, setVariantData] = useState({
-    label: '',
-    value: '',
-    unit: 'ml',
-    price: '',
-    stock: '',
+    label: "",
+    value: "",
+    unit: "ml",
+    price: "",
+    stock: "",
     imageData: null,
   });
 
   useEffect(() => {
-    if (!open) {
-      setVariantData({ label: '', value: '', unit: 'ml', price: '', stock: '', imageData: null });
+    if (open && initialData) {
+      setVariantData({
+        label: initialData.label,
+        value: initialData.value,
+        unit: initialData.unit,
+        price: initialData.price,
+        stock: initialData.stock,
+        imageData: initialData.image
+          ? { type: "url", value: initialData.image, preview: initialData.image }
+          : null,
+      });
+    } else if (open && !initialData) {
+      setVariantData({ label: "", value: "", unit: "ml", price: "", stock: "", imageData: null });
     }
-  }, [open]);
+  }, [open, initialData]);
 
-  const handleChange = (field, value) => {
-    setVariantData((prev) => ({ ...prev, [field]: value }));
-  };
+  const handleChange = (key, value) => setVariantData(prev => ({ ...prev, [key]: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,118 +159,55 @@ export function AddVariantModal({ open, onClose, onAdd, productName }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-white p-0 block max-h-[85vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[500px] bg-white p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle>Add Variant for: {productName}</DialogTitle>
+          <DialogTitle>{initialData ? "Edit" : "Add"} Variant – {productName}</DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[calc(85vh-80px)] overflow-y-auto px-6 py-4">
-          <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            {/* Image Section */}
-            <div>
-              <ImageInput
-                label="Variant Image (Optional)"
-                imageData={variantData.imageData}
-                onChange={(data) => handleChange('imageData', data)}
-                className="h-full"
-              />
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <ImageInput label="Variant Image (Optional)" imageData={variantData.imageData} onChange={data => handleChange("imageData", data)} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Label className="text-xs font-medium">Label *</Label>
+              <Input className="h-9 text-xs" value={variantData.label} onChange={e => handleChange("label", e.target.value)} required />
             </div>
 
-            {/* Fields Section */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1 col-span-2">
-                <Label className="text-xs font-medium">
-                  Label <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  value={variantData.label}
-                  onChange={(e) => handleChange('label', e.target.value)}
-                  placeholder="e.g. Family Pack"
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
+            <div>
+              <Label className="text-xs font-medium">Value *</Label>
+              <Input type="number" className="h-9 text-xs" value={variantData.value} onChange={e => handleChange("value", e.target.value)} required />
+            </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">
-                  Value <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  value={variantData.value}
-                  onChange={(e) => handleChange('value', e.target.value)}
-                  placeholder="500"
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
+            <div>
+              <Label className="text-xs font-medium">Unit *</Label>
+              <Select value={variantData.unit} onValueChange={v => handleChange("unit", v)}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ml">ml</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="gm">gm</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">
-                  Unit <span className="text-red-500">*</span>
-                </Label>
-                <ToggleGroup 
-                  type="single" 
-                  value={variantData.unit} 
-                  onValueChange={(value) => value && handleChange('unit', value)}
-                  className="justify-start gap-1"
-                >
-                  <ToggleGroupItem value="ml" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
-                    ml
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="litre" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
-                    litre
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="gm" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
-                    gm
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="kg" className="text-xs px-3 py-1 h-8 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-700">
-                    kg
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
+            <div>
+              <Label className="text-xs font-medium">Price (₹) *</Label>
+              <Input type="number" className="h-9 text-xs" value={variantData.price} onChange={e => handleChange("price", e.target.value)} required />
+            </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">
-                  Price (₹) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  value={variantData.price}
-                  onChange={(e) => handleChange('price', e.target.value)}
-                  placeholder="0"
-                  className="h-9 text-xs font-medium"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">
-                  Stock <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="number"
-                  value={variantData.stock}
-                  onChange={(e) => handleChange('stock', e.target.value)}
-                  placeholder="0"
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
+            <div>
+              <Label className="text-xs font-medium">Stock *</Label>
+              <Input type="number" className="h-9 text-xs" value={variantData.stock} onChange={e => handleChange("stock", e.target.value)} required />
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Variant'}
+            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+              {loading ? (initialData ? "Updating..." : "Adding...") : (initialData ? "Update Variant" : "Add Variant")}
             </Button>
           </div>
         </form>
-        </div>
       </DialogContent>
     </Dialog>
   );

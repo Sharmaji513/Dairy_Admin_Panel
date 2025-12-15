@@ -5,27 +5,17 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-// ✨ REMOVED: Custom Select imports to avoid Z-Index bugs
 import { toast } from 'sonner@2.0.3';
 import { useNavigate } from 'react-router-dom';
-import { categoryService } from '../../lib/api/services/categoryService';
-
-// --- HELPER COMPONENTS ---
 
 function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500", icon: Icon = Check }) {
   return (
     <div 
       onClick={() => onChange(!checked)}
-      className={`
-        flex items-center justify-between w-full p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none
-        ${checked ? `border-${activeColor.split('-')[1]}-200 bg-${activeColor.split('-')[1]}-50` : 'border-gray-200 bg-white hover:bg-gray-50'}
-      `}
+      className={`flex items-center justify-between w-full p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none ${checked ? `border-${activeColor.split('-')[1]}-200 bg-${activeColor.split('-')[1]}-50` : 'border-gray-200 bg-white hover:bg-gray-50'}`}
     >
       <div className="flex items-center gap-3">
-        <div className={`
-          h-8 w-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0
-          ${checked ? `bg-white text-${activeColor.split('-')[1]}-600 shadow-sm` : 'bg-gray-100 text-gray-400'}
-        `}>
+        <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${checked ? `bg-white text-${activeColor.split('-')[1]}-600 shadow-sm` : 'bg-gray-100 text-gray-400'}`}>
           <Icon className="h-4 w-4" />
         </div>
         <span className={`text-xs font-medium ${checked ? 'text-gray-900' : 'text-gray-500'}`}>
@@ -33,14 +23,8 @@ function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500", 
         </span>
       </div>
       
-      <div className={`
-        w-9 h-5 rounded-full transition-colors relative flex-shrink-0
-        ${checked ? activeColor : 'bg-gray-300'}
-      `}>
-        <div className={`
-          absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform duration-200
-          ${checked ? 'translate-x-4' : 'translate-x-0'}
-        `} />
+      <div className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${checked ? activeColor : 'bg-gray-300'}`}>
+        <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </div>
     </div>
   );
@@ -181,8 +165,6 @@ function TagInput({ label, tags, onChange, placeholder }) {
     );
 }
 
-// --- MAIN COMPONENT ---
-
 export function AddProductModal({ open, onClose, onAdd, categories = [], onCategoryCreate }) {
   const navigate = useNavigate();
   
@@ -204,17 +186,41 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.category || !formData.price || !formData.originalPrice || !formData.cost || !formData.stock || !formData.volume) {
-      toast.error("Please fill in all mandatory fields (*)");
+
+    const stockValue = parseInt(formData.stock);
+
+    if (
+      !formData.name.trim() ||
+      !formData.category ||
+      !formData.price ||
+      !formData.originalPrice ||
+      !formData.cost ||
+      isNaN(stockValue) ||
+      stockValue <= 0 ||
+      !formData.volume.trim()
+    ) {
+      toast.error("All mandatory fields are required. Stock must be greater than 0.");
       return;
     }
     
     setLoading(true);
     try { 
-        // ✨ Removed 'variants' from the data sent to parent
-        await onAdd({ ...formData }); 
+        const payload = {
+          ...formData,
+          stock: stockValue,
+          price: parseFloat(formData.price),
+          originalPrice: parseFloat(formData.originalPrice),
+          cost: parseFloat(formData.cost),
+        };
+
+        await onAdd(payload); 
+        toast.success("Product added successfully!");
         onClose(); 
-    } catch (error) { } finally { setLoading(false); }
+    } catch (error) {
+      toast.error(error.message || "Failed to add product");
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
@@ -228,18 +234,15 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
         <div className="p-6">
             <form id="product-form" onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Image Section */}
               <div className="w-full">
                   <ImageInput label="Product Image" imageData={formData.mainImage} onChange={handleMainImageChange} className="h-full" />
               </div>
 
-              {/* Main Fields */}
               <div className="space-y-4 bg-white p-4 rounded-lg border shadow-sm">
                   <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1"><Label className="text-xs font-semibold">Product Name <span className="text-red-500">*</span></Label><Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Butter Chicken" className="h-9 text-xs" /></div>
                       <div className="space-y-1">
                           <Label className="text-xs font-semibold">Category <span className="text-red-500">*</span></Label>
-                          {/* ✨ FIXED: Native Select to prevent click issues */}
                           <div className="relative">
                             <select
                                 className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-white"
@@ -247,7 +250,7 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     if (val === 'create_new') {
-                                        navigate('/category-management'); // Redirects to category page
+                                        navigate('/category-management');
                                     } else {
                                         setFormData({ ...formData, category: val });
                                     }
@@ -275,12 +278,11 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Total Stock <span className="text-red-500">*</span></Label><Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} placeholder="20" className="h-9 text-xs" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Total Stock <span className="text-red-500">*</span></Label><Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} placeholder="e.g. 50 (required)" className="h-9 text-xs" min="1" required /></div>
                       <div className="space-y-1"><Label className="text-xs font-semibold">Volume/Size <span className="text-red-500">*</span></Label><Input value={formData.volume} onChange={(e) => setFormData({ ...formData, volume: e.target.value })} placeholder="100 ml Bottle" className="h-9 text-xs" /></div>
                   </div>
               </div>
 
-              {/* Desc & Tags */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1 bg-white p-4 rounded-lg border shadow-sm"><Label className="text-xs font-semibold">Description</Label><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Product details..." className="text-xs min-h-[100px]" /></div>
                   <div className="space-y-4 bg-white p-4 rounded-lg border shadow-sm">
@@ -289,9 +291,6 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
                   </div>
               </div>
 
-              {/* ✨ REMOVED: Variants Section */}
-
-              {/* Toggles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CustomToggle label="Available for Order" checked={formData.availableForOrder} onChange={(c) => setFormData({...formData, availableForOrder: c})} activeColor="bg-green-500" icon={Check} />
                 <CustomToggle label="VIP Only Product" checked={formData.isVIP} onChange={(c) => setFormData({...formData, isVIP: c})} activeColor="bg-purple-500" icon={Plus} />
@@ -299,7 +298,6 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
             </form>
         </div>
 
-        {/* Footer */}
         <div className="p-4 bg-white border-t sticky bottom-0 z-10 flex justify-end gap-3">
             <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
             <Button type="submit" form="product-form" className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]" disabled={loading}>
