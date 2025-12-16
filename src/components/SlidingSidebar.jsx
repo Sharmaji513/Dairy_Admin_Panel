@@ -46,23 +46,21 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      {/* Sidebar Header */}
       <div className="p-4 border-b border-gray-100 flex items-center h-20 flex-shrink-0 overflow-hidden bg-white relative z-20">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm relative z-10">
           <span className="text-white font-bold text-xl">D</span>
         </div>
         
-        {/* FIX 1: Strict Width Control & Overflow Hidden on Header Text */}
+        {/* FIX: hidden class added here */}
         <div className={cn(
-          "flex flex-col justify-center transition-all duration-300 overflow-hidden whitespace-nowrap",
-          isExpanded ? "ml-3 opacity-100 w-auto" : "ml-0 opacity-0 w-0"
+          "ml-3 flex flex-col justify-center transition-all duration-300 overflow-hidden whitespace-nowrap min-w-[150px]",
+          isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none hidden"
         )}>
           <span className="font-bold text-xl text-red-600">Dynasty Premium</span>
           <span className="text-xs text-gray-500 font-medium">Welcome {userRole}</span>
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 custom-scrollbar bg-white relative z-10">
         <div className="space-y-1">
           {filteredItems.map((item) => {
@@ -81,7 +79,6 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
                 )}
                 title={!isExpanded ? item.label : undefined}
               >
-                {/* Icon Container - Fixed Width to prevent squishing */}
                 <div className={cn(
                   "flex items-center justify-center transition-colors flex-shrink-0 w-6 h-6",
                   isActive ? "text-red-600" : "text-gray-500 group-hover:text-gray-700"
@@ -89,14 +86,10 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
                   <Icon size={22} strokeWidth={1.5} />
                 </div>
                 
-                {/* FIX 2: The Glitch Fix 
-                   - whitespace-nowrap: Prevents text from breaking into two lines
-                   - w-0: Forces width to 0 when collapsed
-                   - overflow-hidden: Cuts off any remaining pixels
-                */}
+                {/* FIX: hidden class added here */}
                 <span className={cn(
-                  "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden text-left",
-                  isExpanded ? "ml-3 opacity-100 w-32" : "ml-0 opacity-0 w-0"
+                  "ml-3 font-medium whitespace-nowrap transition-all duration-300 overflow-hidden text-left",
+                  isExpanded ? "opacity-100 w-32 delay-100" : "opacity-0 w-0 hidden"
                 )}>
                   {item.label}
                 </span>
@@ -110,7 +103,6 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
         </div>
       </nav>
 
-      {/* Footer */}
       <div className="p-4 border-t border-gray-100 mt-auto bg-white relative z-20">
         <button
           onClick={onLogout}
@@ -120,8 +112,8 @@ export function SlidingSidebar({ currentPage, onPageChange, onLogout, userRole =
             <LogOut size={22} strokeWidth={1.5} />
           </div>
           <span className={cn(
-            "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
-            isExpanded ? "ml-3 opacity-100 w-auto" : "ml-0 opacity-0 w-0"
+            "ml-3 font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
+            isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"
           )}>
             Logout
           </span>

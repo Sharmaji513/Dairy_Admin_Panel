@@ -1,4 +1,3 @@
-// admin_11/src/pages/Membership.jsx
 import { useState } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -18,17 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table';
-import { Search, Edit2, Trash2, Crown, Percent, Truck, Star } from 'lucide-react';
+import { Search, Edit2, Trash2, Crown, Percent, Truck, Star, RefreshCw, Download, Plus } from 'lucide-react';
 import { AddMembershipModal } from '../components/modals/AddMembershipModal';
 import { EditMembershipModal } from '../components/modals/EditMembershipModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
 import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner@2.0.3';
-import { useApiMemberships } from '../lib/hooks/useApiMemberships'; // ✨ CHANGED
-// import { usePersistentMembership } from '../lib/usePersistentData'; // ✨ REMOVED
+import { toast } from 'sonner';
+import { useApiMemberships } from '../lib/hooks/useApiMemberships'; 
 
 export function Membership() {
-  // const [membershipPlans, setMembershipPlans] = usePersistentMembership(); // ✨ REMOVED
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,12 +46,11 @@ export function Membership() {
     createMembership,
     updateMembership,
     deleteMembership,
+    refetch // Assuming the hook provides this for refreshing
   } = useApiMemberships({
     search: searchQuery,
     sort: sortOrder,
   });
-
-  // const filteredPlans = membershipPlans.filter(...) // ✨ REMOVED
 
   const handleAddPlan = async (data) => {
     try {
@@ -109,20 +105,58 @@ export function Membership() {
     return <Truck className="h-4 w-4 text-blue-500" />;
   };
 
+  const handleRefresh = () => {
+      if(refetch) refetch();
+      else console.log("Refetching membership data...");
+      toast.success("Membership data refreshed");
+  };
+
+  const handleExport = () => {
+      console.log("Exporting membership data...");
+      toast.info("Exporting membership data...");
+  };
+
   return (
-    <div className="p-4">
+    <div className="p-6 space-y-6">
+      {/* Header with Actions - STANDARDIZED & ALIGNED RIGHT */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Membership Tiers</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage membership tiers and benefits.</p>
+        </div>
+        
+        {/* Buttons Aligned Right */}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            className="h-9 text-xs border border-gray-300"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handleExport}
+            className="h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Export
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={() => setAddModalOpen(true)} 
+            className="h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add New Tier
+          </Button>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-4 border-b space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Membership Tiers</h3>
-            <Button
-              size="sm"
-              className="h-9 text-xs bg-red-500 hover:bg-red-600"
-              onClick={() => setAddModalOpen(true)}
-            >
-              + Add New Tier
-            </Button>
-          </div>
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />

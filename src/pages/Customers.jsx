@@ -1,32 +1,19 @@
 import { useState } from 'react';
-import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, Eye, Crown } from 'lucide-react';
+import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, Eye, Crown, RefreshCw, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Checkbox } from '../components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { useApiCustomers } from '../lib/hooks/useApiCustomers'; 
 import { useDashboardStats } from '../lib/hooks/useDashboardStats'; 
 import { EditCustomerModal } from '../components/modals/EditCustomerModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
 import { CustomerDetailsModal } from '../components/modals/CustomerDetailsModal';
 import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner@2.0.3'; 
+import { toast } from 'sonner'; 
 import { useNavigate } from 'react-router-dom';
 
 export function Customers() {
@@ -66,10 +53,7 @@ export function Customers() {
     limit: parseInt(entriesPerPage)
   });
 
-  const { 
-    stats, 
-    loading: statsLoading 
-  } = useDashboardStats();
+  const { stats, loading: statsLoading } = useDashboardStats();
 
   const handleEditCustomer = async (updatedData) => {
     try {
@@ -117,7 +101,6 @@ export function Customers() {
     }
   };
 
-  // ✨ FIX: Calculate stats locally from the list, IGNORING the API stats for now
   const totalCustomersCount = filteredCustomers.length;
   
   const activeCustomersCount = filteredCustomers.filter(c => {
@@ -135,24 +118,37 @@ export function Customers() {
     return type === 'high-value';
   }).length;
 
+  const handleExport = () => {
+      console.log("Exporting customers...");
+      toast.info("Exporting customer data...");
+  }
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center justify-end">
-        <div className="flex gap-2">
+    <div className="p-6 space-y-6">
+      {/* Header with Actions - STANDARDIZED & ALIGNED RIGHT */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage customer data and view their order history.</p>
+        </div>
+        
+        {/* Buttons Aligned Right */}
+        <div className="flex items-center gap-2">
           <Button 
-            variant="outline"
-            size="sm"
-            className="transition-all duration-200 h-9 text-xs border border-gray-300"
-            onClick={refetch} 
+            variant="outline" 
+            size="sm" 
+            onClick={refetch}
+            className="h-9 text-xs border border-gray-300"
           >
-            🔄 Refresh
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
           </Button>
           <Button 
-            variant="outline"
-            size="sm"
-            className="transition-all duration-200 h-9 text-xs bg-red-500 text-white hover:bg-red-600 border border-red-500"
+            size="sm" 
+            onClick={handleExport}
+            className="h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
           >
+            <Download className="h-3 w-3 mr-1" />
             Export
           </Button>
         </div>
@@ -175,7 +171,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Active Customers</p>
-              {/* ✨ USE LOCAL COUNT */}
               <h3 className="text-lg">{loading ? '...' : activeCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
@@ -187,7 +182,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">Returning</p>
-              {/* ✨ USE LOCAL COUNT */}
               <h3 className="text-lg">{loading ? '...' : returningCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center">
@@ -199,7 +193,6 @@ export function Customers() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1 font-bold">High-Value</p>
-              {/* ✨ USE LOCAL COUNT */}
               <h3 className="text-lg">{loading ? '...' : highValueCustomersCount}</h3>
             </div>
             <div className="h-9 w-9 bg-orange-50 rounded-full flex items-center justify-center">
@@ -365,7 +358,6 @@ export function Customers() {
                   };
                   const membershipTier = getMembershipTier();
                   
-                  // Robust Status Check
                   const isActive = (customer.status || '').toLowerCase() === 'active';
 
                   return (
@@ -441,7 +433,6 @@ export function Customers() {
                         </Badge>
                       </TableCell>
 
-                      {/* ✨ RESTORED: White Button with Colored Border & Dot */}
                       <TableCell>
                         <button
                           onClick={(e) => {
@@ -533,7 +524,6 @@ export function Customers() {
         )}
       </div>
 
-      {/* Edit Customer Modal */}
       <EditCustomerModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
@@ -541,7 +531,6 @@ export function Customers() {
         customer={selectedCustomer}
       />
 
-      {/* Delete Modal */}
       <DeleteConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
@@ -550,7 +539,6 @@ export function Customers() {
         description={`Are you sure you want to delete ${selectedCustomer?.name}? This action cannot be undone.`}
       />
 
-      {/* Customer Details Modal */}
       {selectedCustomer && (
         <CustomerDetailsModal
           open={detailsModalOpen}

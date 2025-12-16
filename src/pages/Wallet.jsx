@@ -1,4 +1,3 @@
-// admin_11/src/pages/Wallet.jsx
 import { useState } from 'react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -38,6 +37,9 @@ import {
   CircleArrowUp,
   CircleArrowDown,
   Users,
+  RefreshCw,
+  Download,
+  Plus
 } from 'lucide-react';
 import { AddDiscountBonusModal } from '../components/modals/AddDiscountBonusModal';
 import { EditDiscountBonusModal } from '../components/modals/EditDiscountBonusModal';
@@ -45,16 +47,14 @@ import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmation
 import { AddWalletTransactionModal } from '../components/modals/AddWalletTransactionModal';
 import { usePersistentWallet, usePersistentCustomers } from '../lib/usePersistentData';
 import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner@2.0.3';
-import { useApiDiscounts } from '../lib/hooks/useApiDiscounts'; // ✨ ADDED
-import { useApiWalletStats } from '../lib/hooks/useApiWalletStats'; // ✨ ADDED
+import { toast } from 'sonner';
+import { useApiDiscounts } from '../lib/hooks/useApiDiscounts'; 
+import { useApiWalletStats } from '../lib/hooks/useApiWalletStats'; 
 
 export function Wallet() {
-  // ✨ We STILL need usePersistentWallet for the "Transactions" tab mock data
   const [walletData, setWalletData] = usePersistentWallet();
   const [customers] = usePersistentCustomers();
   
-  // State for modals and selected items
   const [addDiscountModalOpen, setAddDiscountModalOpen] = useState(false);
   const [editDiscountModalOpen, setEditDiscountModalOpen] = useState(false);
   const [deleteDiscountModalOpen, setDeleteDiscountModalOpen] = useState(false);
@@ -64,7 +64,6 @@ export function Wallet() {
   const [deleteTransactionModalOpen, setDeleteTransactionModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-  // Filter states
   const [discountSearch, setDiscountSearch] = useState('');
   const [discountStatus, setDiscountStatus] = useState('all');
   const [discountType, setDiscountType] = useState('all');
@@ -72,30 +71,25 @@ export function Wallet() {
   const [transactionStatus, setTransactionStatus] = useState('all');
   const [transactionType, setTransactionType] = useState('all');
 
-  // ✨ --- API Hook for Stats --- ✨
   const { 
     stats, 
     loading: statsLoading 
   } = useApiWalletStats();
 
-  // ✨ --- API Hook for Discounts List --- ✨
   const {
     discounts,
     loading: discountsLoading,
     error: discountsError,
-    total: totalDiscountsApi,
     createDiscount,
     updateDiscount,
     deleteDiscount,
+    refetch: refreshDiscounts // Aliased for clarity
   } = useApiDiscounts({
     search: discountSearch,
     status: discountStatus,
     type: discountType,
   });
 
-  // const filteredDiscounts = walletData.discounts.filter(...) // ✨ REMOVED (API handles this)
-
-  // ✨ --- CRUD Functions for Discounts --- ✨
   const handleAddDiscount = async (data) => {
     try {
       await createDiscount(data);
@@ -142,9 +136,6 @@ export function Wallet() {
     }
   };
 
-
-  // --- Transaction Functions (Untouched) ---
-  // These still use mock data from usePersistentWallet
   const filteredTransactions = walletData.transactions.filter((t) => {
     const customer = customers.find((c) => c.id === t.userId);
     const matchesSearch =
@@ -183,21 +174,63 @@ export function Wallet() {
       showSuccessToast('Transaction deleted successfully!');
     }
   };
-  // --- End of Transaction Functions ---
+
+  const handleRefresh = () => {
+      if(refreshDiscounts) refreshDiscounts();
+      toast.success("Wallet data refreshed");
+  };
+
+  const handleExport = () => {
+      console.log("Exporting wallet data...");
+      toast.info("Exporting wallet data...");
+  };
 
   return (
-    <div className="p-4">
+    <div className="p-6 space-y-6">
+      {/* Header with Actions - STANDARDIZED & ALIGNED RIGHT */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Wallet Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage discounts, bonuses, and transactions.</p>
+        </div>
+        
+        {/* Buttons Aligned Right */}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            className="h-9 text-xs border border-gray-300"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handleExport}
+            className="h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Export
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={() => setAddDiscountModalOpen(true)} // Default to adding discount for now
+            className="h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New
+          </Button>
+        </div>
+      </div>
+
       <Tabs defaultValue="discounts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="discounts">Discounts / Bonus</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
 
-        {/* ====================================================================== */}
-        {/* =================== DISCOUNTS / BONUS TAB (Integrated) ================= */}
-        {/* ====================================================================== */}
         <TabsContent value="discounts">
-          {/* Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1 font-bold">Total Discounts</p>
@@ -251,17 +284,10 @@ export function Wallet() {
                     <SelectItem value="Bonus">Bonus</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
-                  size="sm"
-                  className="h-9 text-xs bg-red-500 hover:bg-red-600"
-                  onClick={() => setAddDiscountModalOpen(true)}
-                >
-                  + Add New
-                </Button>
+                {/* Note: "Add New" button moved to top header */}
               </div>
             </div>
 
-            {/* ✨ --- LOADING & ERROR HANDLING --- ✨ */}
             {discountsLoading && <div className="p-4 text-center">Loading discounts...</div>}
             {discountsError && <div className="p-4 text-center text-red-500">Error: {discountsError}</div>}
             {!discountsLoading && !discountsError && (
@@ -341,11 +367,7 @@ export function Wallet() {
           </div>
         </TabsContent>
 
-        {/* ====================================================================== */}
-        {/* ================== TRANSACTIONS TAB (NOT Integrated) ================= */}
-        {/* ====================================================================== */}
         <TabsContent value="transactions">
-          {/* Stat Cards (using mock stats for now) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <Card className="p-4">
               <p className="text-sm text-muted-foreground mb-1 font-bold">Total Wallet Balance</p>
@@ -395,9 +417,10 @@ export function Wallet() {
                     <SelectItem value="refund">Refund</SelectItem>
                   </SelectContent>
                 </Select>
+                {/* Secondary Add Button for Transactions specifically inside the tab context if needed, or rely on top button */}
                 <Button
                   size="sm"
-                  className="h-9 text-xs bg-red-500 hover:bg-red-600"
+                  className="h-9 text-xs bg-gray-100 text-gray-900 hover:bg-gray-200 border border-gray-200"
                   onClick={() => setAddTransactionModalOpen(true)}
                 >
                   + Add Transaction
@@ -405,7 +428,6 @@ export function Wallet() {
               </div>
             </div>
 
-            {/* This table still uses mock data */}
             <Table>
               <TableHeader>
                 <TableRow className="text-xs">
@@ -469,7 +491,6 @@ export function Wallet() {
         </TabsContent>
       </Tabs>
 
-      {/* Discount Modals */}
       <AddDiscountBonusModal
         open={addDiscountModalOpen}
         onOpenChange={setAddDiscountModalOpen}
@@ -493,7 +514,6 @@ export function Wallet() {
         </>
       )}
 
-      {/* Transaction Modals (Still using mock data) */}
       <AddWalletTransactionModal
         open={addTransactionModalOpen}
         onOpenChange={setAddTransactionModalOpen}

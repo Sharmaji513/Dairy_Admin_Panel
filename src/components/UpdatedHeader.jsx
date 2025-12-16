@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Bell, Search, ChevronDown, User, LogOut,
-  AlertTriangle, CheckCircle, Info, AlertCircle 
-} from 'lucide-react';
-
+import { Bell, Search, ChevronDown, User, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Badge } from './ui/badge';
+import { notifications } from '../lib/mockData';
+import { useState, useEffect } from 'react';
+import { cn } from './ui/utils';
+import { AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { SearchPopup } from './SearchPopup';
-import { cn } from './ui/utils';
-import { notifications } from '../lib/mockData';
 
 const notificationIcons = {
   alert: AlertTriangle,
@@ -36,15 +33,13 @@ export function UpdatedHeader({
   currentPage = 'Dashboard',
   pageTitle
 }) {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchPopupOpen, setSearchPopupOpen] = useState(false);
+  const [notifs, setNotifs] = useState(notifications);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifs, setNotifs] = useState(notifications);
-  
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [searchPopupOpen, setSearchPopupOpen] = useState(false);
   const unreadCount = notifs.filter(n => !n.isRead).length;
 
-  // --- LIVE CLOCK ---
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -52,140 +47,211 @@ export function UpdatedHeader({
     return () => clearInterval(timer);
   }, []);
 
+  const markAllAsRead = () => {
+    setNotifs(notifs.map(n => ({ ...n, isRead: true })));
+  };
+
+  const handleProfileClick = () => {
+    setProfileOpen(false);
+    onNavigate('profile');
+  };
+
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit', hour12: true,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
   });
 
   const formattedDate = currentTime.toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
   });
 
-  const markAllAsRead = () => setNotifs(notifs.map(n => ({ ...n, isRead: true })));
-  const handleProfileClick = () => { setProfileOpen(false); onNavigate('profile'); };
-
   return (
-    <header className="relative h-16 border-b border-border bg-white w-full px-4 sticky top-0 z-40 shadow-sm flex items-center justify-between">
-      
-      {/* 1. LEFT SIDE: Page Title */}
-      <div className="flex items-center gap-2 z-10 max-w-[250px] overflow-hidden">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-900 whitespace-nowrap">
-          <span className="truncate block">{pageTitle || currentPage}</span>
+    // FIX: Added 'z-40' to stay above content but below sidebar (which is z-50)
+    <header className="h-12 border-b border-border bg-white px-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300 text-xs shadow-sm">
+      <div className="flex items-center gap-4">
+        {/* Page Title */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-900">{pageTitle || currentPage}</span>
           <span className="text-gray-300">/</span>
-          <span className="text-red-500">Management</span>
+          <span className="text-sm text-red-500">Management</span>
         </div>
       </div>
 
-      {/* 2. CENTER: Search Bar (Absolute Centered) 
-          REMOVED 'hidden' classes to force visibility on your screen.
-      */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:block">
-        <div className="relative w-[300px]">
+      <div className="flex items-center gap-4 flex-1 max-w-xl mx-auto">
+        {/* Date and Time */}
+        <span className="text-sm text-muted-foreground hidden sm:flex items-center gap-2 whitespace-nowrap">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            {formattedTime}
+          </span>
+          <span className="mx-1">•</span>
+          {formattedDate}
+        </span>
+        
+        {/* Search Box */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search..."
-            className="pl-9 h-9 bg-muted/30 border-gray-200 focus-visible:ring-1 focus-visible:ring-red-500 w-full text-xs"
+            placeholder="Search orders, customers, menu items..."
+            className="pl-10 bg-muted/50 border border-gray-300 transition-all duration-200"
             readOnly
             onClick={() => setSearchPopupOpen(true)}
           />
         </div>
       </div>
 
-      {/* 3. RIGHT SIDE: Time -> Notifications -> Profile */}
-      <div className="flex items-center gap-4 z-10">
-        
-        {/* LIVE TIME & DATE (FORCED VISIBLE) 
-            Removed 'hidden' and added specific text styling.
-        */}
-        <div className="flex flex-col items-end mr-2">
-          <span className="text-xs font-bold text-gray-700 whitespace-nowrap">{formattedTime}</span>
-          <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">{formattedDate}</span>
-        </div>
+      <div className="flex items-center gap-4">
 
-        {/* Separator Line */}
-        <div className="h-6 w-[1px] bg-gray-200"></div>
-
-        {/* Mobile Search Icon (Only if screen is extremely small) */}
-        <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 text-muted-foreground" onClick={() => setSearchPopupOpen(true)}>
-          <Search className="h-5 w-5" />
-        </Button>
-
-        {/* Notifications */}
+        {/* Notifications Button */}
         <div className="relative">
-          <Button variant="ghost" size="icon" className="relative h-9 w-9 hover:bg-red-50 hover:text-red-600 transition-colors" onClick={() => setNotificationOpen(!notificationOpen)}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={() => setNotificationOpen(!notificationOpen)}
+          >
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 bg-red-500 border-2 border-white">{unreadCount}</Badge>}
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500">
+                {unreadCount}
+              </Badge>
+            )}
           </Button>
-          
+
           {/* Notification Dropdown */}
           {notificationOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setNotificationOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="flex items-center justify-between p-3 border-b bg-gray-50/50">
-                  <h3 className="font-medium text-sm">Notifications</h3>
-                  {unreadCount > 0 && <Badge variant="destructive" className="bg-red-500 text-[10px] h-5">{unreadCount} new</Badge>}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setNotificationOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h3>Notifications</h3>
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive" className="bg-red-500">
+                      {unreadCount} new
+                    </Badge>
+                  )}
                 </div>
-                <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                  {notifs.map((n) => {
-                    const Icon = notificationIcons[n.type];
+                <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                  {notifs.map((notification) => {
+                    const Icon = notificationIcons[notification.type];
                     return (
-                      <div key={n.id} className={cn("p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer", !n.isRead && "bg-red-50/30")}>
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          "p-4 border-b last:border-b-0 hover:bg-muted/50 transition-colors",
+                          !notification.isRead && "bg-red-50/50"
+                        )}
+                      >
                         <div className="flex gap-3">
-                          <div className={cn("mt-0.5", notificationColors[n.type])}><Icon className="h-4 w-4" /></div>
-                          <div className="flex-1 space-y-1"><p className="font-medium text-sm leading-none">{n.title}</p><p className="text-xs text-muted-foreground line-clamp-1">{n.message}</p><p className="text-[10px] text-muted-foreground">{n.time}</p></div>
+                          <div className={cn("mt-0.5", notificationColors[notification.type])}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium">{notification.title}</p>
+                              {!notification.isRead && (
+                                <span className="h-2 w-2 rounded-full bg-red-500 mt-1.5"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">{notification.time}</p>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="p-2 border-t bg-gray-50/50"><Button variant="ghost" size="sm" className="w-full text-xs text-red-600 h-8 hover:bg-red-50" onClick={markAllAsRead}>Mark all as read</Button></div>
+                <div className="p-3 border-t">
+                  <Button
+                    variant="ghost"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={markAllAsRead}
+                  >
+                    Mark all as read
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </div>
 
-        {/* User Profile - FIXED: BLACK HUMAN LOGO */}
+        {/* Profile Dropdown */}
         <div className="relative">
-          <button className="flex items-center gap-2 pl-2 border-l border-gray-200 h-8 hover:opacity-80 transition-opacity" onClick={() => setProfileOpen(!profileOpen)}>
-            
-            {/* AVATAR FIX: Solid Black Background with White Icon */}
-            <Avatar className="h-8 w-8 border border-gray-100">
-              <AvatarImage src={profilePhoto} alt={userName} className="object-cover" />
-              <AvatarFallback className="bg-black flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </AvatarFallback>
+          <button 
+            className="flex items-center gap-3 pl-3 border-l h-auto py-2 hover:bg-gray-50 rounded-md transition-all duration-200 cursor-pointer"
+            onClick={() => setProfileOpen(!profileOpen)}
+          >
+            <Avatar className="h-9 w-9">
+              {profilePhoto ? (
+                <AvatarImage src={profilePhoto} alt={userName} />
+              ) : (
+                <AvatarFallback className="bg-gray-900 text-white">
+                  <User className="h-5 w-5" />
+                </AvatarFallback>
+              )}
             </Avatar>
-
-            <div className="hidden lg:block text-left">
-              <p className="text-xs font-medium leading-none text-gray-700">{userName}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{userRole}</p>
+            <div className="hidden sm:block text-left">
+              <p className="text-sm">{userName}</p>
+              <p className="text-xs text-muted-foreground">{userRole}</p>
             </div>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown Menu */}
           {profileOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="p-3 bg-gray-50/50 border-b">
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setProfileOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4 bg-gray-50">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={profilePhoto} />
-                      <AvatarFallback className="bg-black flex items-center justify-center">
-                        <User className="h-6 w-6 text-white" />
-                      </AvatarFallback>
+                    <Avatar className="h-12 w-12">
+                      {profilePhoto ? (
+                        <AvatarImage src={profilePhoto} alt={userName} />
+                      ) : (
+                        <AvatarFallback className="bg-gray-900 text-white">
+                          <User className="h-6 w-6" />
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{userName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{userRole}</p>
+                      <p className="font-medium truncate">{userName}</p>
+                      <p className="text-sm text-muted-foreground truncate">{userRole}</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-1">
-                  <button onClick={handleProfileClick} className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-gray-100 transition-colors text-left text-gray-700"><User className="h-4 w-4" /> <span>My Profile</span></button>
-                  <Separator className="my-1" />
-                  <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-red-50 text-red-600 transition-colors text-left"><LogOut className="h-4 w-4" /> <span>Sign out</span></button>
+
+                <Separator />
+
+                {/* MODIFIED: Only My Profile and Sign Out remain */}
+                <div className="p-2">
+                  <button
+                    onClick={handleProfileClick}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-left"
+                  >
+                    <User className="h-4 w-4 text-gray-600" />
+                    <span>My Profile</span>
+                  </button>
+                </div>
+
+                <Separator />
+
+                <div className="p-2">
+                  <button
+                    onClick={onLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-red-50 text-red-600 transition-all duration-200 text-left"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign out</span>
+                  </button>
                 </div>
               </div>
             </>
@@ -193,7 +259,14 @@ export function UpdatedHeader({
         </div>
       </div>
 
-      {searchPopupOpen && <SearchPopup isOpen={searchPopupOpen} onClose={() => setSearchPopupOpen(false)} onNavigate={onNavigate} />}
+      {/* Search Popup */}
+      {searchPopupOpen && (
+        <SearchPopup
+          isOpen={searchPopupOpen}
+          onClose={() => setSearchPopupOpen(false)}
+          onNavigate={onNavigate}
+        />
+      )}
     </header>
   );
 }
