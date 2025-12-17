@@ -1,3 +1,4 @@
+// Customers.jsx - Fixed Refresh Button
 import { useState } from 'react';
 import { Search, Edit2, Trash2, Users, UserCheck, Repeat, TrendingUp, Phone, Calendar, Filter, ChevronDown, Eye, Crown, RefreshCw, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -123,6 +124,11 @@ export function Customers() {
       toast.info("Exporting customer data...");
   }
 
+  const handleRefresh = () => {
+    if (refetch) refetch();
+    toast.success("Customer data refreshed");
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header with Actions - STANDARDIZED & ALIGNED RIGHT */}
@@ -134,10 +140,11 @@ export function Customers() {
         
         {/* Buttons Aligned Right */}
         <div className="flex items-center gap-2">
+          {/* REFRESH BUTTON FIXED */}
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={refetch}
+            onClick={handleRefresh}
             className="h-9 text-xs border border-gray-300"
           >
             <RefreshCw className="h-3 w-3 mr-1" />

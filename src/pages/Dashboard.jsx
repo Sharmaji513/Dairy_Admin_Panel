@@ -14,6 +14,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { DeliveryBoysCard } from '../components/DeliveryBoysCard';
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { toast } from 'sonner'; // ✨ Added toast import
 
 // Import API Hooks
 import { useApiOrders } from '../lib/hooks/useApiOrders';
@@ -102,6 +103,12 @@ export function Dashboard() {
     }
   };
 
+  // ✨ ADDED: Handle Export Function
+  const handleExport = () => {
+    toast.info("Exporting dashboard data...");
+    // Add logic here to export data (e.g., CSV download)
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -122,7 +129,12 @@ export function Dashboard() {
               <DropdownMenuItem onClick={() => setDateFilter('thisYear')}>This Year</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button className="bg-red-500 hover:bg-red-600 transition-all duration-200">
+          
+          {/* ✨ UPDATED: Export Button with onClick Handler */}
+          <Button 
+            className="bg-red-500 hover:bg-red-600 transition-all duration-200"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>

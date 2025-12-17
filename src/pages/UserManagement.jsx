@@ -28,18 +28,29 @@ export function UserManagement() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ✨ API Hook
+  // ✨ FIXED: Destructured 'refetch' instead of 'refreshUsers'
   const { 
-    users: userList, loading, error, createUser, updateUser, deleteUser, toggleUserStatus, refreshUsers 
+    users: userList, loading, error, createUser, updateUser, deleteUser, toggleUserStatus, refetch 
   } = useApiUsers({ search: searchQuery });
 
-  const handleAddUser = async (userData) => { try { await createUser(userData); showSuccessToast('User created!'); setAddModalOpen(false); } catch (err) { toast.error(err.message); } };
-  const handleEditUser = async (updatedData) => { try { await updateUser(updatedData.id, updatedData); showSuccessToast('User updated!'); setEditModalOpen(false); } catch (err) { toast.error(err.message); } };
-  const handleDeleteUser = async () => { if (selectedUser) { try { await deleteUser(selectedUser.id); showSuccessToast('User deleted!'); setDeleteModalOpen(false); setSelectedUser(null); } catch (err) { toast.error(err.message); } } };
+  const handleAddUser = async (userData) => { try { await createUser(userData); showSuccessToast('User created!'); setAddModalOpen(false); if(refetch) refetch(); } catch (err) { toast.error(err.message); } };
+  const handleEditUser = async (updatedData) => { try { await updateUser(updatedData.id, updatedData); showSuccessToast('User updated!'); setEditModalOpen(false); if(refetch) refetch(); } catch (err) { toast.error(err.message); } };
+  const handleDeleteUser = async () => { if (selectedUser) { try { await deleteUser(selectedUser.id); showSuccessToast('User deleted!'); setDeleteModalOpen(false); setSelectedUser(null); if(refetch) refetch(); } catch (err) { toast.error(err.message); } } };
   const handleClearFilters = () => { setRoleFilter('all'); setModuleFilter('all'); setSortBy('name'); setSortOrder('asc'); };
-  const handleExport = () => { console.log("Exporting user data..."); };
+  
+  // ✨ FIXED: Added Toast Notification
+  const handleExport = () => { 
+    console.log("Exporting user data..."); 
+    toast.info("Exporting user data...");
+  };
 
-  // Filtering & Sorting (Client-side for now)
+  // ✨ FIXED: Added Toast Notification & Used refetch
+  const handleRefresh = () => {
+    if(refetch) refetch();
+    toast.success("User data refreshed");
+  };
+
+  // Filtering & Sorting
   const filteredUsers = userList.filter(user => {
     const matchesSearch = (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (user.email || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === 'all' || (roleFilter === 'admin' && (user.role === 'Super Admin' || user.role === 'Admin')) || (roleFilter === 'user' && (user.role === 'Manager' || user.role === 'User'));
@@ -48,9 +59,9 @@ export function UserManagement() {
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
     let compare = 0;
-    if (sortBy === 'name') compare = (a.name || '').localeCompare(b.name || '');
-    if (sortBy === 'email') compare = (a.email || '').localeCompare(b.email || '');
-    if (sortBy === 'role') compare = (a.role || '').localeCompare(b.role || '');
+    if (sortBy === 'name') compare = (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+    if (sortBy === 'email') compare = (a.email || '').toLowerCase().localeCompare((b.email || '').toLowerCase());
+    if (sortBy === 'role') compare = (a.role || '').toLowerCase().localeCompare((b.role || '').toLowerCase());
     return sortOrder === 'asc' ? compare : -compare;
   });
 
@@ -65,18 +76,16 @@ export function UserManagement() {
 
   return (
     <div className="p-6">
-      {/* Header & Stats - ✨ RESTORED ORIGINAL LAYOUT WITH NEW BUTTONS */}
       <div className="mb-6 flex items-center justify-between">
         <div>
             <h2>User Management</h2>
             <p className="text-muted-foreground">Manage system users and their roles</p>
         </div>
         <div className="flex gap-2">
-           {/* --- STANDARD BUTTONS INTEGRATED HERE --- */}
            <Button 
             variant="outline" 
             size="sm" 
-            onClick={refreshUsers} // Wired to hook
+            onClick={handleRefresh}
             className="transition-all duration-200 h-9 text-xs border border-gray-300"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
@@ -100,7 +109,6 @@ export function UserManagement() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="p-4 transition-all duration-200 hover:shadow-md">
           <div className="flex items-start justify-between">
@@ -139,7 +147,6 @@ export function UserManagement() {
         </Card>
       </div>
 
-      {/* Filters & Table */}
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-4 border-b">
           <div className="flex gap-3">

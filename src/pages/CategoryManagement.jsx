@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, FolderOpen, Upload, Image as ImageIcon, Check, Power, RefreshCw, Download } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FolderOpen, Upload, Image as ImageIcon, Check, Power, RefreshCw, Download, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
@@ -11,7 +11,6 @@ import { showSuccessToast } from '../lib/toast';
 import { toast } from 'sonner';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
-// Reusing CustomToggle logic locally
 function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500" }) {
   return (
     <div 
@@ -60,7 +59,8 @@ export function CategoryManagement() {
     icon: '', 
     imageFile: null, 
     imagePreview: '',
-    isActive: true 
+    isActive: true,
+    removeImage: false // ✨ Added: Flag to track image removal intent
   });
 
   const filteredCategories = categories.filter(c => 
@@ -77,7 +77,8 @@ export function CategoryManagement() {
         icon: category.icon || '',
         imageFile: null,
         imagePreview: category.image || '', 
-        isActive: category.isActive ?? true
+        isActive: category.isActive ?? true,
+        removeImage: false // ✨ Reset flag when opening edit modal
       });
     } else {
       setEditingCategory(null);
@@ -88,7 +89,8 @@ export function CategoryManagement() {
         icon: '', 
         imageFile: null, 
         imagePreview: '',
-        isActive: true 
+        isActive: true,
+        removeImage: false // ✨ Reset flag for new category
       });
     }
     setModalOpen(true);
@@ -97,10 +99,25 @@ export function CategoryManagement() {
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData(prev => ({ ...prev, imageFile: file }));
+      // ✨ If a new file is selected, we are not removing the image, we are replacing it.
+      setFormData(prev => ({ ...prev, imageFile: file, removeImage: false }));
       const reader = new FileReader();
       reader.onloadend = () => setFormData(prev => ({ ...prev, imagePreview: reader.result }));
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle removing the image
+  const handleRemoveImage = (e) => {
+    e.stopPropagation(); 
+    setFormData(prev => ({ 
+      ...prev, 
+      imageFile: null, 
+      imagePreview: '',
+      removeImage: true // ✨ Set flag to true so backend knows to delete the image
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -111,6 +128,8 @@ export function CategoryManagement() {
     }
     try {
       if (editingCategory) {
+        // The formData now includes removeImage: true if the X was clicked.
+        // Your categoryService needs to handle this flag to delete the image on the backend.
         await categoryService.updateCategory(editingCategory._id || editingCategory.id, formData);
         showSuccessToast('Category updated successfully!');
       } else {
@@ -142,23 +161,28 @@ export function CategoryManagement() {
 
   const handleExport = () => {
     console.log("Exporting categories...");
+    toast.info("Exporting category data...");
+  };
+
+  const handleRefresh = () => {
+    if (refetch) refetch();
+    toast.success("Category data refreshed");
   };
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header with Actions - FIXED ALIGNMENT */}
+      {/* ... Header and Search section (unchanged) ... */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Category Management</h1>
           <p className="text-sm text-gray-500 mt-1">Manage product categories and hierarchy.</p>
         </div>
         
-        {/* Buttons Container: Removed w-full to prevent stretching */}
         <div className="flex items-center gap-2">
            <Button 
             variant="outline" 
             size="sm" 
-            onClick={refetch}
+            onClick={handleRefresh}
             className="transition-all duration-200 h-9 text-xs border border-gray-300"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
@@ -175,7 +199,6 @@ export function CategoryManagement() {
           <Button 
             size="sm" 
             onClick={() => handleOpenModal()} 
-            // Removed w-full so it only takes needed width
             className="transition-all duration-200 h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -216,7 +239,7 @@ export function CategoryManagement() {
                   <p className="text-sm text-gray-500">{cat.productsCount || 0} Products</p>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" onClick={() => handleOpenModal(cat)} className="hover:bg-blue-50 text-blue-600">
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -238,11 +261,20 @@ export function CategoryManagement() {
           <div className="p-6 space-y-6">
             <div className="flex justify-center">
                <div 
-                  className="h-32 w-32 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative transition-colors"
+                  className="h-32 w-32 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative transition-colors group"
                   onClick={() => fileInputRef.current?.click()}
                >
                   {formData.imagePreview ? (
-                    <img src={formData.imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    <>
+                      <img src={formData.imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 bg-white/90 hover:bg-red-500 text-red-600 hover:text-white rounded-full p-1.5 shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
                   ) : (
                     <>
                       <Upload className="h-8 w-8 text-gray-400 mb-2" />
@@ -253,6 +285,7 @@ export function CategoryManagement() {
                <input type="file" ref={fileInputRef} className="hidden" onChange={handleImageUpload} accept="image/*" />
             </div>
 
+            {/* ... rest of the form fields (unchanged) ... */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Display Name *</Label>

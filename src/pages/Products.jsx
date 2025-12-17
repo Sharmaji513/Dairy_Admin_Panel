@@ -1,4 +1,3 @@
-// Products.jsx - Full Final Code
 import { useState, useMemo } from 'react';
 import { Search, Plus, Filter, Edit2, Trash2, Package, CheckCircle, TrendingUp, Star, X, ChevronDown, Layers, RefreshCw, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -13,7 +12,7 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { useApiProducts } from '../lib/hooks/useApiProducts';
 import { useDashboardStats } from '../lib/hooks/useDashboardStats';
 import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useApiCategories } from '../lib/hooks/useApiCategories';
 import { useNavigate } from 'react-router-dom';
 
@@ -61,15 +60,11 @@ export function Products() {
   const filteredProducts = validProducts.filter(product => {
     const productName = product.name || '';
     const matchesSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
-
     const productCatName = (product.categoryName || '').toLowerCase().trim();
-
     const matchesCategory = selectedCategory === 'all' || productCatName === selectedCategory.toLowerCase().trim();
-
     let matchesStatus = true;
     if (selectedStatus === 'instock') matchesStatus = product.inStock;
     else if (selectedStatus === 'outofstock') matchesStatus = !product.inStock;
-
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -79,61 +74,66 @@ export function Products() {
     return nameA.localeCompare(nameB);
   });
 
+  const handleRefresh = () => {
+    if (refetch) refetch();
+    toast.success("Product data refreshed");
+  };
+
   const handleUpdateProduct = async (updatedData) => {
     if (!selectedProduct) return;
+
+    // ✨ FIX: Robust ID check (handles _id or id)
+    const productId = selectedProduct._id || selectedProduct.id;
+    if (!productId) {
+        toast.error("Error: Product ID is missing");
+        return;
+    }
 
     try {
       const payload = new FormData();
 
-      if (updatedData.dishName !== undefined && updatedData.dishName !== selectedProduct.name) {
-        payload.append('dishName', updatedData.dishName.trim());
+      // ✨ FIX: Send both 'name' and 'dishName' to ensure backend accepts it
+      const name = updatedData.dishName || updatedData.name;
+      if (name) {
+          payload.append('dishName', name.trim());
+          payload.append('name', name.trim());
       }
-      if (updatedData.category !== undefined) {
-        payload.append('category', updatedData.category);
-      }
-      if (updatedData.price !== undefined) {
-        payload.append('price', updatedData.price);
-      }
-      if (updatedData.originalPrice !== undefined) {
-        payload.append('originalPrice', updatedData.originalPrice);
-      }
-      if (updatedData.cost !== undefined) {
-        payload.append('cost', updatedData.cost);
-      }
-      if (updatedData.stock !== undefined) {
-        payload.append('stock', updatedData.stock);
-      }
-      if (updatedData.volume !== undefined) {
-        payload.append('volume', updatedData.volume.trim());
-      }
+
+      // ✨ FIX: Always append these fields if they exist in the form data
+      if (updatedData.category) payload.append('category', updatedData.category);
+      if (updatedData.price !== undefined) payload.append('price', updatedData.price);
+      if (updatedData.originalPrice !== undefined) payload.append('originalPrice', updatedData.originalPrice);
+      if (updatedData.cost !== undefined) payload.append('cost', updatedData.cost);
+      if (updatedData.stock !== undefined) payload.append('stock', updatedData.stock);
+      if (updatedData.volume) payload.append('volume', updatedData.volume);
+      
       if (updatedData.image instanceof File) {
         payload.append('image', updatedData.image);
       }
 
-      if (payload.entries().next().done) {
-        toast.info('No changes made');
-        setEditModalOpen(false);
-        return;
-      }
-
-      await updateProduct(selectedProduct.id, payload);
+      await updateProduct(productId, payload);
 
       showSuccessToast('Product updated successfully!');
 
+      // ✨ Refresh data immediately and then again after a delay to ensure sync
       if (refetch) refetch();
+      setTimeout(() => {
+          if (refetch) refetch();
+      }, 500);
 
       setEditModalOpen(false);
       setSelectedProduct(null);
     } catch (err) {
-      console.error(err);
+      console.error("Update failed:", err);
       toast.error(err.message || 'Failed to update product');
     }
   };
 
   const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
+    const productId = selectedProduct._id || selectedProduct.id;
     try {
-      await deleteProduct(selectedProduct.id);
+      await deleteProduct(productId);
       showSuccessToast('Product deleted successfully!');
       if (refetch) refetch();
       setDeleteModalOpen(false);
@@ -156,7 +156,7 @@ export function Products() {
           <h2 className="text-2xl font-bold text-gray-900">Products / Management</h2>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="gap-2" onClick={() => { if (refetch) refetch(); }}>
+          <Button variant="outline" className="gap-2" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
           <Button variant="outline" className="gap-2" onClick={() => toast.info("Exporting...")}>
@@ -167,35 +167,17 @@ export function Products() {
           </Button>
         </div>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div><p className="text-sm text-muted-foreground mb-1 font-bold">Total Products</p><h3 className="text-lg">{totalProducts}</h3></div>
-            <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center"><Package className="h-4 w-4 text-blue-500" /></div>
-          </div>
-        </Card>
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div><p className="text-sm text-muted-foreground mb-1 font-bold">Available</p><h3 className="text-lg">{availableProducts}</h3></div>
-            <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f5e9' }}><CheckCircle className="h-4 w-4 text-green-600" /></div>
-          </div>
-        </Card>
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div><p className="text-sm text-muted-foreground mb-1 font-bold">Today's Revenue</p><h3 className="text-lg">₹{todaysRevenue}</h3></div>
-            <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center"><TrendingUp className="h-4 w-4 text-purple-500" /></div>
-          </div>
-        </Card>
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div><p className="text-sm text-muted-foreground mb-1 font-bold">Avg Rating</p><h3 className="text-lg">{avgRating}</h3></div>
-            <div className="h-9 w-9 bg-yellow-50 rounded-full flex items-center justify-center"><Star className="h-4 w-4 text-yellow-500" /></div>
-          </div>
-        </Card>
+         <Card className="p-4 hover:shadow-md transition-all"><div className="flex justify-between"><div><p className="text-sm text-gray-500 font-bold">Total Products</p><h3 className="text-lg">{totalProducts}</h3></div><div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center text-blue-500"><Package className="h-4 w-4"/></div></div></Card>
+         <Card className="p-4 hover:shadow-md transition-all"><div className="flex justify-between"><div><p className="text-sm text-gray-500 font-bold">Available</p><h3 className="text-lg">{availableProducts}</h3></div><div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center text-green-600"><CheckCircle className="h-4 w-4"/></div></div></Card>
+         <Card className="p-4 hover:shadow-md transition-all"><div className="flex justify-between"><div><p className="text-sm text-gray-500 font-bold">Revenue</p><h3 className="text-lg">₹{todaysRevenue}</h3></div><div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center text-purple-500"><TrendingUp className="h-4 w-4"/></div></div></Card>
+         <Card className="p-4 hover:shadow-md transition-all"><div className="flex justify-between"><div><p className="text-sm text-gray-500 font-bold">Avg Rating</p><h3 className="text-lg">{avgRating}</h3></div><div className="h-9 w-9 bg-yellow-50 rounded-full flex items-center justify-center text-yellow-500"><Star className="h-4 w-4"/></div></div></Card>
       </div>
 
       <Card className="p-6 bg-gray-50/50 border-none shadow-none">
-        <div className="space-y-4 mb-6">
+        {/* ✨ FIX: Reduced bottom margin (mb-2) to bring list closer */}
+        <div className="space-y-4 mb-2">
           <div className="flex items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -234,15 +216,16 @@ export function Products() {
           )}
         </div>
 
+        {/* ✨ FIX: Reduced top margin (mt-2) to reduce gap */}
         {!productsLoading && !productsError && sortedProducts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">
             {sortedProducts.map((product) => {
               if (!product) return null;
               const categoryName = product.categoryName || 'Uncategorized';
               const productName = product.name || 'Unknown Name';
 
               return (
-                <Card key={product.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-200 bg-white flex flex-col h-full group">
+                <Card key={product.id || product._id} className="overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-200 bg-white flex flex-col h-full group">
                   <div className="relative h-48 bg-gray-50 border-b flex items-center justify-center overflow-hidden">
                     <ImageWithFallback src={product.image} alt={productName} className="w-full h-full object-contain transition-transform duration-100 group-hover:scale-105" />
                     <Badge className="absolute top-2 right-2 px-2 py-0.5 text-[10px] font-semibold shadow-sm z-10" style={{ backgroundColor: product.inStock ? '#dcfce7' : '#fee2e2', color: product.inStock ? '#166534' : '#b91c1c', border: product.inStock ? '1px solid #86efac' : '1px solid #fca5a5' }}>
@@ -263,7 +246,7 @@ export function Products() {
 
                     <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100 mt-auto">
                       <Button variant="outline" size="sm" className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:text-purple-800 transition-colors flex items-center justify-center"
-                        onClick={() => navigate(`/products/${product.id}/variants`)}>
+                        onClick={() => navigate(`/products/${product.id || product._id}/variants`)}>
                         <Layers className="h-4 w-4 mr-1" /> Variants
                       </Button>
 
@@ -271,7 +254,7 @@ export function Products() {
                         onClick={() => {
                           setSelectedProduct({
                             ...product,
-                            dishName: product.name
+                            dishName: product.name // Map for form
                           });
                           setEditModalOpen(true);
                         }}>
