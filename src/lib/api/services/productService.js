@@ -53,7 +53,7 @@ export const productService = {
       console.error("Update Error:", error.response?.data);
       throw error.response?.data || { message: "Failed to update product" };
     }
-  },
+  }, 
 
   async deleteProduct(id) {
     return apiClient.delete(buildUrl(API_ENDPOINTS.PRODUCTS.DELETE, { id }));
