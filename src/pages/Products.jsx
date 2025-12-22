@@ -297,30 +297,36 @@ export function Products() {
         {!productsLoading && sortedProducts.length === 0 && <p className="text-center mt-8">No products found.</p>}
       </Card>
 
-      <AddProductModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onAdd={createProduct} categories={categories} />
+      <AddProductModal 
+        open={addModalOpen} 
+        onClose={() => setAddModalOpen(false)} 
+        onAdd={createProduct} 
+        categories={categories} 
+      />
 
       {selectedProduct && (
         <>
+          {/* ✅ UPDATED: Pass product and specific props, removed generic 'fields' */}
           <EditModal
             open={editModalOpen}
-            onOpenChange={(open) => { setEditModalOpen(open); if (!open) setSelectedProduct(null); }}
-            onSave={handleUpdateProduct}
-            title="Edit Product"
-            data={selectedProduct}
-            fields={[
-              { key: 'dishName', label: 'Product Name', type: 'text' },
-              { key: 'category', label: 'Category', type: 'select', options: categories.map(c => ({ label: c.displayName || c.name, value: c._id || c.id })) },
-              { key: 'price', label: 'Price (₹)', type: 'number' },
-              { key: 'originalPrice', label: 'Original Price (₹)', type: 'number' },
-              { key: 'cost', label: 'Cost (₹)', type: 'number' },
-              { key: 'stock', label: 'Stock', type: 'number' },
-              { key: 'volume', label: 'Volume/Size', type: 'text' },
-              { key: 'image', label: 'Product Image', type: 'file' },
-            ]}
+            onOpenChange={(open) => {
+              setEditModalOpen(open);
+              if (!open) setSelectedProduct(null);
+            }}
+            product={selectedProduct}
+            categories={categories} // Pass categories so the dropdown works
+            onSuccess={() => {
+              if (refetch) refetch(); // Refresh the list
+              setEditModalOpen(false); // Close modal
+            }}
           />
+
           <DeleteConfirmationModal
             open={deleteModalOpen}
-            onOpenChange={(open) => { setDeleteModalOpen(open); if (!open) setSelectedProduct(null); }}
+            onOpenChange={(open) => {
+              setDeleteModalOpen(open);
+              if (!open) setSelectedProduct(null);
+            }}
             onConfirm={handleDeleteProduct}
             title="Delete Product"
             description={`Are you sure you want to delete "${selectedProduct.name || 'this product'}"? This action cannot be undone.`}

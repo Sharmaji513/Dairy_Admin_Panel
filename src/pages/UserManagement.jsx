@@ -1,195 +1,301 @@
 import { useState } from 'react';
-import { UserPlus, Search, Edit2, Trash2, Download, Filter, Users as UsersIcon, UserCheck, ChevronDown, X, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
+import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
-import { Card } from '../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Search, Plus, Edit2, Trash2, Shield, Download, RefreshCw, X, ArrowUpDown, Users, UserCheck } from 'lucide-react';
 import { AddUserModal } from '../components/modals/AddUserModal';
 import { EditUserModal } from '../components/modals/EditUserModal';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
-import { showSuccessToast } from '../lib/toast';
-import { toast } from 'sonner';
 import { useApiUsers } from '../lib/hooks/useApiUsers';
+import { toast } from 'sonner';
+
+// Full list of permissions matching the "Add User" modal
+const PANEL_PERMISSIONS = [
+  "dashboard", "inventory", "orders", "delivery", "customers", "reports", 
+  "products", "settings", "userManagement", "profile", "membership", 
+  "analytics", "auditLogs", "billing", "content", "wallet", 
+  "helpSupport", "apiAccess"
+];
 
 export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
-  const [moduleFilter, setModuleFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [moduleDropdownOpen, setModuleDropdownOpen] = useState(false);
-  const [sortByDropdownOpen, setSortByDropdownOpen] = useState(false);
+  const [selectedModule, setSelectedModule] = useState('all');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [sortOrder, setSortOrder] = useState('asc'); 
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ✨ FIXED: Destructured 'refetch' instead of 'refreshUsers'
-  const { 
-    users: userList, loading, error, createUser, updateUser, deleteUser, toggleUserStatus, refetch 
-  } = useApiUsers({ search: searchQuery });
+  const { users, loading, error, refetch, createUser, updateUser, deleteUser } = useApiUsers();
 
-  const handleAddUser = async (userData) => { try { await createUser(userData); showSuccessToast('User created!'); setAddModalOpen(false); if(refetch) refetch(); } catch (err) { toast.error(err.message); } };
-  const handleEditUser = async (updatedData) => { try { await updateUser(updatedData.id, updatedData); showSuccessToast('User updated!'); setEditModalOpen(false); if(refetch) refetch(); } catch (err) { toast.error(err.message); } };
-  const handleDeleteUser = async () => { if (selectedUser) { try { await deleteUser(selectedUser.id); showSuccessToast('User deleted!'); setDeleteModalOpen(false); setSelectedUser(null); if(refetch) refetch(); } catch (err) { toast.error(err.message); } } };
-  const handleClearFilters = () => { setRoleFilter('all'); setModuleFilter('all'); setSortBy('name'); setSortOrder('asc'); };
-  
-  // ✨ FIXED: Added Toast Notification
-  const handleExport = () => { 
-    console.log("Exporting user data..."); 
-    toast.info("Exporting user data...");
-  };
+  // FILTER LOGIC
+  const filteredUsers = users.filter(user => {
+    const query = searchQuery.toLowerCase();
+    const fullName = `${user.firstName || ''} ${user.lastName || ''} ${user.name || ''}`.toLowerCase();
+    const matchesSearch = fullName.includes(query) || (user.email || '').toLowerCase().includes(query);
 
-  // ✨ FIXED: Added Toast Notification & Used refetch
-  const handleRefresh = () => {
-    if(refetch) refetch();
-    toast.success("User data refreshed");
-  };
+    const matchesRole = selectedRole === 'all' || 
+                        (user.role && user.role.toLowerCase() === selectedRole.toLowerCase());
 
-  // Filtering & Sorting
-  const filteredUsers = userList.filter(user => {
-    const matchesSearch = (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (user.email || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || (roleFilter === 'admin' && (user.role === 'Super Admin' || user.role === 'Admin')) || (roleFilter === 'user' && (user.role === 'Manager' || user.role === 'User'));
-    return matchesSearch && matchesRole;
+    const matchesModule = selectedModule === 'all' || 
+                          (user.permissions && Array.isArray(user.permissions) && user.permissions.includes(selectedModule));
+
+    return matchesSearch && matchesRole && matchesModule;
   });
 
+  // SORT LOGIC
   const sortedUsers = [...filteredUsers].sort((a, b) => {
-    let compare = 0;
-    if (sortBy === 'name') compare = (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
-    if (sortBy === 'email') compare = (a.email || '').toLowerCase().localeCompare((b.email || '').toLowerCase());
-    if (sortBy === 'role') compare = (a.role || '').toLowerCase().localeCompare((b.role || '').toLowerCase());
-    return sortOrder === 'asc' ? compare : -compare;
+    const nameA = (a.firstName || a.name || '').toLowerCase();
+    const nameB = (b.firstName || b.name || '').toLowerCase();
+    return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
   });
 
-  const totalUsers = userList.length;
-  const adminUsers = userList.filter(u => u.role === 'Super Admin' || u.role === 'Admin').length;
-  const activeUsers = userList.filter(u => 
-    u.isActive === true || 
-    (u.status && u.status.toLowerCase() === 'active')
-  ).length;
-  const modules = ['All Modules', 'Dashboard', 'User Management', 'Settings']; 
-  const sortOptions = [{ value: 'name', label: 'Sort by Name' }, { value: 'email', label: 'Sort by Email' }, { value: 'role', label: 'Sort by Role' }];
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedModule('all');
+    setSelectedRole('all');
+    setSortOrder('asc');
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    toast.success("User list refreshed");
+  };
+
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(user);
+    setDeleteModalOpen(true);
+  };
+
+  const handleSaveEdit = async (updatedData) => {
+    try {
+      await updateUser(updatedData.id, updatedData);
+      setEditModalOpen(false);
+      setSelectedUser(null);
+      toast.success("User updated successfully");
+    } catch (err) {
+      toast.error(err.message || "Failed to update user");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedUser) return;
+    try {
+      await deleteUser(selectedUser.id || selectedUser._id);
+      setDeleteModalOpen(false);
+      setSelectedUser(null);
+      toast.success("User deleted successfully");
+    } catch (err) {
+      toast.error(err.message || "Failed to delete user");
+    }
+  };
+
+  const totalUsers = users.length;
+  const adminCount = users.filter(u => u.role === 'Admin' || u.role === 'Super Admin').length;
+  const activeCount = users.filter(u => u.isEnabled !== false).length; 
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="flex justify-between items-center mb-6">
         <div>
-            <h2>User Management</h2>
-            <p className="text-muted-foreground">Manage system users and their roles</p>
+          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+          <p className="text-sm text-gray-500">Manage system users and their roles</p>
         </div>
-        <div className="flex gap-2">
-           <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            className="transition-all duration-200 h-9 text-xs border border-gray-300"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Refresh
+        <div className="flex gap-3">
+          <Button variant="outline" className="gap-2" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
-          <Button 
-            size="sm"
-            onClick={handleExport}
-            className="transition-all duration-200 h-9 text-xs bg-red-500 hover:bg-red-600 text-white border border-red-500"
-          >
-            <Download className="h-3 w-3 mr-1" /> 
-            Export
+          <Button variant="outline" className="gap-2 text-red-500 border-red-200 hover:bg-red-50">
+            <Download className="h-4 w-4" /> Export
           </Button>
-          <Button 
-            className="bg-red-500 hover:bg-red-600 text-white h-9 text-xs" 
-            onClick={() => setAddModalOpen(true)}
-          >
-            <UserPlus className="h-3 w-3 mr-1" /> 
-            Add User
+          <Button className="bg-red-500 hover:bg-red-600 gap-2" onClick={() => setAddModalOpen(true)}>
+            <Plus className="h-4 w-4" /> Add User
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1 font-bold">Total Users</p>
-              <h3 className="text-lg">{totalUsers}</h3>
-            </div>
-            <div className="h-9 w-9 bg-blue-50 rounded-full flex items-center justify-center">
-              <UsersIcon className="h-4 w-4 text-blue-500" />
-            </div>
-          </div>
-        </Card>
+      {/* ✨ UPDATED STATS CARDS: Single Row Layout (Flex Row) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1 font-bold">Admin Users</p>
-              <h3 className="text-lg">{adminUsers}</h3>
-            </div>
-            <div className="h-9 w-9 bg-purple-50 rounded-full flex items-center justify-center">
-              <UserCheck className="h-4 w-4 text-purple-500" />
-            </div>
+        {/* Card 1: Total Users */}
+        <Card className="p-6 flex flex-row items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Users</p>
+            <h3 className="text-2xl font-bold text-gray-900">{totalUsers}</h3>
+          </div>
+          <div className="h-12 w-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500">
+            <Users className="h-6 w-6" />
           </div>
         </Card>
-        
-        <Card className="p-4 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1 font-bold">Active Users</p>
-              <h3 className="text-lg">{activeUsers}</h3>
-            </div>
-            <div className="h-9 w-9 bg-green-50 rounded-full flex items-center justify-center">
-              <UserCheck className="h-4 w-4 text-green-500" />
-            </div>
+
+        {/* Card 2: Admin Users */}
+        <Card className="p-6 flex flex-row items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+           <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Admin Users</p>
+            <h3 className="text-2xl font-bold text-gray-900">{adminCount}</h3>
+          </div>
+          <div className="h-12 w-12 bg-purple-50 rounded-full flex items-center justify-center text-purple-500">
+            <Shield className="h-6 w-6" />
           </div>
         </Card>
+
+        {/* Card 3: Active Users */}
+        <Card className="p-6 flex flex-row items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+           <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Active Users</p>
+            <h3 className="text-2xl font-bold text-gray-900">{activeCount}</h3>
+          </div>
+          <div className="h-12 w-12 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+            <UserCheck className="h-6 w-6" />
+          </div>
+        </Card>
+
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-4 border-b">
-          <div className="flex gap-3">
-            <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search users..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-            <div className="relative"><Button variant="outline" onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}>{roleFilter === 'all' ? 'All Roles' : roleFilter === 'admin' ? 'Admin' : 'User'}<ChevronDown className="h-4 w-4 ml-2" /></Button>
-              {roleDropdownOpen && (<><div className="fixed inset-0 z-40" onClick={() => setRoleDropdownOpen(false)} /><div className="absolute top-full mt-2 left-0 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2"><button onClick={() => { setRoleFilter('all'); setRoleDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">All Roles</button><button onClick={() => { setRoleFilter('admin'); setRoleDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">Admin</button><button onClick={() => { setRoleFilter('user'); setRoleDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">User</button></div></>)}
-            </div>
-            <div className="relative"><Button variant="outline" onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}><Filter className="h-4 w-4 mr-2" /> More <ChevronDown className="h-4 w-4 ml-2" /></Button></div>
+      <Card className="border-none shadow-sm bg-white">
+        {/* Filter Bar */}
+        <div className="p-4 border-b flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input 
+              placeholder="Search users..." 
+              className="pl-10" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          {moreDropdownOpen && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex gap-3 items-center">
-              <div className="relative"><Button variant="outline" size="sm" onClick={() => setModuleDropdownOpen(!moduleDropdownOpen)}>{moduleFilter === 'all' ? 'All Modules' : moduleFilter}<ChevronDown className="h-4 w-4 ml-2" /></Button>
-                {moduleDropdownOpen && (<><div className="fixed inset-0 z-40" onClick={() => setModuleDropdownOpen(false)} /><div className="absolute top-full mt-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2 max-h-64 overflow-y-auto">{modules.map((module) => (<button key={module} onClick={() => { setModuleFilter(module === 'All Modules' ? 'all' : module); setModuleDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">{module}</button>))}</div></>)}
-              </div>
-              <div className="relative"><Button variant="outline" size="sm" onClick={() => setSortByDropdownOpen(!sortByDropdownOpen)}>{sortOptions.find(opt => opt.value === sortBy)?.label || 'Sort by Name'}<ChevronDown className="h-4 w-4 ml-2" /></Button>
-                {sortByDropdownOpen && (<><div className="fixed inset-0 z-40" onClick={() => setSortByDropdownOpen(false)} /><div className="absolute top-full mt-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">{sortOptions.map((option) => (<button key={option.value} onClick={() => { setSortBy(option.value); setSortByDropdownOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50">{option.label}</button>))}</div></>)}
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>{sortOrder === 'asc' ? <><ArrowUp className="h-4 w-4 mr-2" /> ASC</> : <><ArrowDown className="h-4 w-4 mr-2" /> DESC</>}</Button>
-              <Button variant="outline" size="sm" onClick={handleClearFilters} className="ml-auto"><X className="h-4 w-4 mr-2" /> Clear All</Button>
-            </div>
+          
+          <Select value={selectedModule} onValueChange={setSelectedModule}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Modules" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Modules</SelectItem>
+              {PANEL_PERMISSIONS.map(perm => (
+                <SelectItem key={perm} value={perm}>
+                  {perm.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="Admin">Admin</SelectItem>
+              <SelectItem value="PanelUser">Panel User</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" onClick={toggleSort} className="gap-2">
+            Sort by Name
+            <ArrowUpDown className={`h-3.5 w-3.5 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
+          </Button>
+
+          {(searchQuery || selectedModule !== 'all' || selectedRole !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilters} className="text-gray-500">
+              <X className="h-4 w-4 mr-1" /> Clear All
+            </Button>
           )}
         </div>
 
-        {loading ? <div className="p-8 text-center">Loading users...</div> : (
-          <Table>
-            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead><TableHead>Phone</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {sortedUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                  <TableCell><Badge variant="secondary" className="bg-gray-100 text-gray-700">{user.role}</Badge></TableCell>
-                  <TableCell className="text-muted-foreground">{user.phone || 'N/A'}</TableCell>
-                  <TableCell className="text-right"><div className="flex gap-1 justify-end"><Button variant="ghost" size="icon" onClick={() => { setSelectedUser(user); setEditModalOpen(true); }}><Edit2 className="h-4 w-4 text-blue-600" /></Button><Button variant="ghost" size="icon" onClick={() => { setSelectedUser(user); setDeleteModalOpen(true); }}><Trash2 className="h-4 w-4 text-red-600" /></Button></div></TableCell>
+        {/* Users Table */}
+        <div className="overflow-x-auto">
+          {loading ? (
+             <div className="p-8 text-center text-gray-500">Loading users...</div>
+          ) : sortedUsers.length === 0 ? (
+             <div className="p-8 text-center text-gray-500">No users found matching your filters.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50">
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sortedUsers.map((user) => (
+                  <TableRow key={user.id || user._id} className="hover:bg-gray-50 transition-colors">
+                    <TableCell className="font-medium text-gray-900">
+                      {user.firstName ? `${user.firstName} ${user.lastName || ''}` : user.name}
+                    </TableCell>
+                    <TableCell className="text-gray-600">{user.email}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                        user.role === 'Admin' || user.role === 'Super Admin'
+                          ? 'bg-purple-50 text-purple-700 border-purple-100'
+                          : 'bg-gray-100 text-gray-700 border-gray-200'
+                      }`}>
+                        {user.role || 'PanelUser'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-600">{user.phone || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleEditClick(user)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteClick(user)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+        
+        {!loading && sortedUsers.length > 0 && (
+          <div className="p-4 border-t flex items-center justify-between text-sm text-gray-500">
+            <span>Showing {sortedUsers.length} users</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled>Previous</Button>
+              <Button variant="outline" size="sm" disabled>Next</Button>
+            </div>
+          </div>
         )}
-      </div>
+      </Card>
 
-      <AddUserModal open={addModalOpen} onOpenChange={setAddModalOpen} onSave={handleAddUser} />
-      {selectedUser && (<><EditUserModal open={editModalOpen} onOpenChange={setEditModalOpen} onSave={handleEditUser} user={selectedUser} /><DeleteConfirmationModal open={deleteModalOpen} onOpenChange={setDeleteModalOpen} onConfirm={handleDeleteUser} title="Delete User" description={`Delete ${selectedUser.name}?`} /></>)}
+      <AddUserModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onAdd={createUser} />
+      
+      {selectedUser && (
+        <>
+          <EditUserModal 
+            open={editModalOpen} 
+            onOpenChange={(open) => { setEditModalOpen(open); if(!open) setSelectedUser(null); }} 
+            user={selectedUser} 
+            onSave={handleSaveEdit}
+          />
+          <DeleteConfirmationModal
+            open={deleteModalOpen}
+            onOpenChange={(open) => { setDeleteModalOpen(open); if(!open) setSelectedUser(null); }}
+            onConfirm={handleConfirmDelete}
+            title="Delete User"
+            description={`Are you sure you want to delete ${selectedUser.name || 'this user'}? This action cannot be undone.`}
+          />
+        </>
+      )}
     </div>
   );
 }
