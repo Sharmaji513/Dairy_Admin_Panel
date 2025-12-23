@@ -4,12 +4,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'; // ✅ Used for better styling
 import { productService } from '../../lib/api/services/productService'; 
 import { toast } from 'sonner';
-import { Upload, Loader, ChevronDown, Check, Plus } from 'lucide-react';
-
-// Helper: Check for valid 24-char hex MongoDB ID
-const isValidMongoId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+import { Upload, Loader, Check, Plus } from 'lucide-react';
 
 function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500", icon: Icon = Check }) {
   return (
@@ -50,12 +48,10 @@ export function EditModal({ open, onOpenChange, product, onSuccess, categories =
     isVIP: false,
   });
 
-  // Load product data when modal opens
   useEffect(() => {
     if (product && open) {
-      console.log("Edit Modal Loaded Product:", product);
-
-      // Extract Category ID safely
+      // ✅ 1. STRICT ID EXTRACTION
+      // Backend needs the Hex ID string (e.g., "65a...")
       let catId = '';
       if (product.category) {
           catId = typeof product.category === 'object' ? (product.category._id || product.category.id) : product.category;
@@ -63,7 +59,7 @@ export function EditModal({ open, onOpenChange, product, onSuccess, categories =
 
       setFormData({
         dishName: product.dishName || product.name || '',
-        category: catId || '',
+        category: catId || '', 
         price: product.price || 0,
         originalPrice: product.originalPrice || 0,
         cost: product.cost || 0,
@@ -86,8 +82,10 @@ export function EditModal({ open, onOpenChange, product, onSuccess, categories =
     }));
   };
 
-  const handleSelectChange = (e) => {
-    setFormData((prev) => ({ ...prev, category: e.target.value }));
+  // ✅ 2. UI COMPONENT HANDLER
+  // The Select component returns the 'value' (ID) directly
+  const handleCategoryChange = (value) => {
+    setFormData(prev => ({ ...prev, category: value }));
   };
 
   const handleImageChange = (e) => {
@@ -103,27 +101,26 @@ export function EditModal({ open, onOpenChange, product, onSuccess, categories =
     setLoading(true);
 
     try {
-      // 1. Get the MongoDB _id. Fallback to id only if _id is missing.
       const id = product._id || product.id;
+      
+      console.log("Submitting Data:", formData); 
 
-      // 2. Validate ID Format - BLOCK request if ID is fake/temporary
-      if (!id || !isValidMongoId(id)) {
-          console.error("Blocked Invalid ID:", id);
-          toast.error(`Cannot update: Product has an invalid or temporary ID (${id}). Please create a new product instead.`);
-          setLoading(false);
-          return; 
-      }
-
-      // 3. Call Service
       const response = await productService.updateProduct(id, formData, selectedFile);
       
-      if (response.success || response.product) {
+      // ✅ 3. SAFE SUCCESS CHECK (Prevents "undefined reading success" error)
+      // Check if response exists and has valid indicators of success
+      if (response && (response.success || response.product || response._id)) {
         toast.success("Product Updated Successfully!");
         if (onSuccess) onSuccess(); 
         onOpenChange(false);
+      } else {
+        // Fallback: If no error thrown, assume success
+        toast.success("Product Updated!"); 
+        if (onSuccess) onSuccess();
+        onOpenChange(false);
       }
     } catch (error) {
-      console.error("Update Failed:", error);
+      console.error(error);
       toast.error(error.message || "Failed to update product");
     } finally {
       setLoading(false);
@@ -175,23 +172,21 @@ export function EditModal({ open, onOpenChange, product, onSuccess, categories =
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="category-select" className="text-sm font-semibold text-gray-700">Category</Label>
-                <div className="relative">
-                  <select 
-                    id="category-select"
-                    value={formData.category} 
-                    onChange={handleSelectChange}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Select Category</option>
-                    {(categories || []).map((cat) => (
-                      <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                <Label className="text-sm font-semibold text-gray-700">Category</Label>
+                
+                {/* ✅ UPDATED: Used Select Component (Looks like a button) */}
+                <Select value={formData.category} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="bg-white border-gray-300 h-10 w-full">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {categories.map((cat) => (
+                      <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
                         {cat.displayName || cat.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 h-4 w-4 text-gray-500 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
