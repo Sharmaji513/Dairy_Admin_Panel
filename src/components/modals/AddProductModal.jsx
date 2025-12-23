@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Plus, Trash2, Link as LinkIcon, X, Check, ChevronDown } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Upload, Plus, Link as LinkIcon, X, Check, ChevronDown, Loader } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { productService } from '../../lib/api/services/productService'; 
+
+// --- Helper Components ---
 
 function CustomToggle({ label, checked, onChange, activeColor = "bg-green-500", icon: Icon = Check }) {
   return (
@@ -165,16 +168,17 @@ function TagInput({ label, tags, onChange, placeholder }) {
     );
 }
 
-export function AddProductModal({ open, onClose, onAdd, categories = [], onCategoryCreate }) {
+// --- Main Component ---
+
+export function AddProductModal({ open, onClose, onSuccess, categories = [] }) {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '', category: '', price: '', originalPrice: '', cost: '', stock: '', volume: '',
     discountPercent: '', isVIP: false, description: '', mainImage: null, 
     availableForOrder: true, vegetarian: false, benefits: [], attributes: [],
   });
-
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -189,34 +193,38 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
 
     const stockValue = parseInt(formData.stock);
 
-    if (
-      !formData.name.trim() ||
-      !formData.category ||
-      !formData.price ||
-      !formData.originalPrice ||
-      !formData.cost ||
-      isNaN(stockValue) ||
-      stockValue <= 0 ||
-      !formData.volume.trim()
-    ) {
-      toast.error("All mandatory fields are required. Stock must be greater than 0.");
+    if (!formData.name.trim() || !formData.category || !formData.price || !formData.stock) {
+      toast.error("Please fill in all required fields (Name, Category, Price, Stock)");
       return;
     }
     
     setLoading(true);
     try { 
-        const payload = {
+        // 1. Prepare Data
+        // IMPORTANT: Map 'name' to 'dishName'
+        // IMPORTANT: Ensure numbers are actually numbers, fallback to 0
+        const productPayload = {
           ...formData,
-          stock: stockValue,
-          price: parseFloat(formData.price),
-          originalPrice: parseFloat(formData.originalPrice),
-          cost: parseFloat(formData.cost),
+          dishName: formData.name, 
+          stock: isNaN(stockValue) ? 0 : stockValue,
+          price: parseFloat(formData.price) || 0,
+          originalPrice: parseFloat(formData.originalPrice) || 0,
+          cost: parseFloat(formData.cost) || 0,
+          description: formData.description || "",
+          volume: formData.volume || ""
         };
 
-        await onAdd(payload); 
+        // 2. Extract File Object
+        const imageFile = formData.mainImage?.type === 'file' ? formData.mainImage.value : null;
+
+        // 3. Call Service
+        await productService.createProduct(productPayload, imageFile);
+        
         toast.success("Product added successfully!");
+        if (onSuccess) onSuccess(); 
         onClose(); 
     } catch (error) {
+      console.error(error);
       toast.error(error.message || "Failed to add product");
     } finally { 
       setLoading(false); 
@@ -225,14 +233,19 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white border shadow-lg p-0 block">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] w-[95vw] p-0 flex flex-col overflow-hidden bg-white border shadow-xl rounded-lg">
         
-        <DialogHeader className="bg-white px-6 py-4 border-b sticky top-0 z-10">
-          <DialogTitle className="text-xl font-bold text-gray-800">Add New Product</DialogTitle>
-        </DialogHeader>
+        <div className="px-6 py-4 border-b bg-white flex-shrink-0">
+          <DialogHeader className="m-0 p-0 text-left">
+            <DialogTitle className="text-xl font-bold text-gray-800">Add New Product</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-1">
+              Fill in the details to create a new product.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="p-6">
-            <form id="product-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
+            <form id="add-product-form" onSubmit={handleSubmit} className="space-y-6">
               
               <div className="w-full">
                   <ImageInput label="Product Image" imageData={formData.mainImage} onChange={handleMainImageChange} className="h-full" />
@@ -240,12 +253,15 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
 
               <div className="space-y-4 bg-white p-4 rounded-lg border shadow-sm">
                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Product Name <span className="text-red-500">*</span></Label><Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Butter Chicken" className="h-9 text-xs" /></div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-semibold">Product Name <span className="text-red-500">*</span></Label>
+                        <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Butter Chicken" className="h-9 text-xs border-gray-300" />
+                      </div>
                       <div className="space-y-1">
                           <Label className="text-xs font-semibold">Category <span className="text-red-500">*</span></Label>
                           <div className="relative">
                             <select
-                                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-white"
+                                className="flex h-9 w-full items-center justify-between rounded-md border border-gray-300 bg-transparent px-3 py-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none bg-white"
                                 value={formData.category}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -272,19 +288,22 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Price <span className="text-red-500">*</span></Label><Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="50" className="h-9 text-xs" /></div>
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Original Price <span className="text-red-500">*</span></Label><Input type="number" value={formData.originalPrice} onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })} placeholder="80" className="h-9 text-xs" /></div>
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Cost <span className="text-red-500">*</span></Label><Input type="number" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} placeholder="10" className="h-9 text-xs" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Price <span className="text-red-500">*</span></Label><Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="50" className="h-9 text-xs border-gray-300" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Original Price</Label><Input type="number" value={formData.originalPrice} onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })} placeholder="80" className="h-9 text-xs border-gray-300" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Cost</Label><Input type="number" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} placeholder="10" className="h-9 text-xs border-gray-300" /></div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Total Stock <span className="text-red-500">*</span></Label><Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} placeholder="e.g. 50 (required)" className="h-9 text-xs" min="1" required /></div>
-                      <div className="space-y-1"><Label className="text-xs font-semibold">Volume/Size <span className="text-red-500">*</span></Label><Input value={formData.volume} onChange={(e) => setFormData({ ...formData, volume: e.target.value })} placeholder="100 ml Bottle" className="h-9 text-xs" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Total Stock <span className="text-red-500">*</span></Label><Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} placeholder="e.g. 50" className="h-9 text-xs border-gray-300" min="0" /></div>
+                      <div className="space-y-1"><Label className="text-xs font-semibold">Volume/Size</Label><Input value={formData.volume} onChange={(e) => setFormData({ ...formData, volume: e.target.value })} placeholder="100 ml Bottle" className="h-9 text-xs border-gray-300" /></div>
                   </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1 bg-white p-4 rounded-lg border shadow-sm"><Label className="text-xs font-semibold">Description</Label><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Product details..." className="text-xs min-h-[100px]" /></div>
+                  <div className="space-y-1 bg-white p-4 rounded-lg border shadow-sm">
+                    <Label className="text-xs font-semibold">Description</Label>
+                    <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Product details..." className="text-xs min-h-[100px] border-gray-300" />
+                  </div>
                   <div className="space-y-4 bg-white p-4 rounded-lg border shadow-sm">
                       <TagInput label="Benefits (Optional)" tags={formData.benefits} onChange={(t) => setFormData({...formData, benefits: t})} placeholder="Add benefit + Enter" />
                       <TagInput label="Attributes (Optional)" tags={formData.attributes} onChange={(t) => setFormData({...formData, attributes: t})} placeholder="Add attribute + Enter" />
@@ -298,10 +317,16 @@ export function AddProductModal({ open, onClose, onAdd, categories = [], onCateg
             </form>
         </div>
 
-        <div className="p-4 bg-white border-t sticky bottom-0 z-10 flex justify-end gap-3">
-            <Button variant="outline" type="button" onClick={onClose}>Cancel</Button>
-            <Button type="submit" form="product-form" className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Product'}
+        <div className="p-4 bg-white border-t sticky bottom-0 z-10 flex justify-end gap-3 flex-shrink-0">
+            <Button variant="outline" type="button" onClick={onClose} className="border-gray-300">Cancel</Button>
+            <Button 
+              type="submit" 
+              form="add-product-form" 
+              className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]" 
+              disabled={loading}
+            >
+              {loading && <Loader className="animate-spin h-4 w-4 mr-2" />}
+              {loading ? 'Saving...' : 'Save Product'}
             </Button>
         </div>
       </DialogContent>
