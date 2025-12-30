@@ -1,35 +1,29 @@
 // admin_11/src/lib/api/services/membershipService.js
 import { apiClient } from '../client';
-import { API_ENDPOINTS, buildUrl } from '../config';
 
 export const membershipService = {
-  /**
-   * Get list of membership plans
-   */
-  async getMemberships(filters) {
-    return apiClient.get(API_ENDPOINTS.MEMBERSHIP.LIST, filters);
+  // Get all plans (Admin view might need a specific endpoint if different from public, 
+  // but assuming we can use the public one or a specific admin list endpoint)
+  async getMemberships() {
+    // Teammate's route: router.get("/plans", protect, getAllPlans);
+    // Adjust endpoint if your backend prefixes it (e.g. /api/v1/membership/plans)
+    return apiClient.get('/membership/plans'); 
   },
 
-  /**
-   * Create a new membership plan
-   */
-  async createMembership(membershipData) {
-    return apiClient.post(API_ENDPOINTS.MEMBERSHIP.CREATE, membershipData);
+  async createMembership(data) {
+    // Teammate's route: router.post("/admin/plans", protect, authorize("Admin"), createPlan);
+    return apiClient.post('/membership/admin/plans', data);
   },
 
-  /**
-   * Update an existing membership plan
-   */
-  async updateMembership(id, membershipData) {
-    const endpoint = buildUrl(API_ENDPOINTS.MEMBERSHIP.UPDATE, { id });
-    return apiClient.put(endpoint, membershipData);
+  async updateMembership(id, data) {
+    // Teammate's route: router.put("/admin/plans/:id", protect, authorize("Admin"), updatePlan);
+    return apiClient.put(`/membership/admin/plans/${id}`, data);
   },
 
-  /**
-   * Delete a membership plan
-   */
   async deleteMembership(id) {
-    const endpoint = buildUrl(API_ENDPOINTS.MEMBERSHIP.DELETE, { id });
-    return apiClient.delete(endpoint);
-  },
+    // Teammate didn't provide a DELETE route in the snippet!
+    // You should ask them to add: router.delete("/admin/plans/:id", protect, authorize("Admin"), deletePlan);
+    // For now, assuming it exists:
+    return apiClient.delete(`/membership/admin/plans/${id}`);
+  }
 };
