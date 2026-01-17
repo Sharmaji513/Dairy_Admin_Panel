@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { membershipService } from '../api/services/membershipService';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback } from "react";
+import { membershipService } from "../api/services/membershipService";
+import { toast } from "sonner";
 
 export function useApiMemberships() {
   const [memberships, setMemberships] = useState([]);
@@ -11,125 +11,74 @@ export function useApiMemberships() {
     setLoading(true);
     try {
       const response = await membershipService.getMemberships();
-      
-      // Safety check
-      if (!response || !response.data) {
-         setMemberships([]);
-         return;
-      }
 
-      const plansList = response.data.plans || [];
-
-      const mappedPlans = plansList.map(plan => ({
-        id: plan.id || plan._id,
-        name: plan.name || 'Unnamed Plan',
-        price: plan.discountPrice || plan.price || 0,
-        // Backend doesn't support these yet, so we use defaults or try to read them if added later
-        minOrders: plan.minOrders || 0, 
-        minSpend: plan.minSpend || 0,
-        discount: plan.discountPercent || 0,
-        benefits: plan.benefits || [],
-        icon: plan.icon || 'Truck', 
-      }));
-
-      setMemberships(mappedPlans);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch memberships:", err);
-      if (err.response && err.response.status !== 404) {
-          setError(err.message || 'Failed to load plans');
+      if (response?.success && Array.isArray(response.plans)) {
+        setMemberships(response.plans); 
+        setError(null);
       } else {
-          setMemberships([]);
+        setMemberships([]);
       }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to load plans");
+      setMemberships([]);
     } finally {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     fetchMemberships();
   }, [fetchMemberships]);
-
   const createMembership = async (data) => {
     try {
-      // ✅ FIX: Calculate fields required by backend that are missing from frontend form
-      const price = Number(data.price);
-      const discountPercent = Number(data.discount) || 0;
-      
-      // Calculate a fake 'originalPrice' because backend requires it to show savings
-      // Formula: Original = Price / (1 - discount%)
-      const originalPrice = discountPercent > 0 
-        ? Math.round(price / (1 - (discountPercent / 100))) 
-        : price;
+      console.log("SENDING TO BACKEND:", data);
 
-      const payload = {
-        name: data.name,
-        originalPrice: originalPrice, // REQUIRED by backend
-        discountPrice: price,         // REQUIRED by backend
-        durationDays: 30,             // REQUIRED by backend (Defaulting to 30 days)
-        benefits: data.benefits,
-        
-        // These fields are NOT in your teammate's controller yet. 
-        // We send them anyway hoping they updated the model, or they will just be ignored.
-        icon: data.icon,
-        minOrders: Number(data.minOrders),
-        minSpend: Number(data.minSpend),
-        discountPercent: discountPercent
-      };
-      
-      console.log("Sending payload to backend:", payload); // For debugging
+      await membershipService.createMembership(data);
 
-      await membershipService.createMembership(payload);
-      fetchMemberships(); 
-      toast.success("Membership tier added successfully!"); // Moved success toast here
+      fetchMemberships();
+      toast.success("Membership tier added successfully!");
     } catch (err) {
       console.error("Create API Error:", err);
-      const errorMsg = err.response?.data?.message || err.message || "Failed to create plan";
-      toast.error(errorMsg); // Show actual error from backend
+      toast.error(
+        err.response?.data?.message || "Failed to create membership plan"
+      );
       throw err;
     }
   };
 
-  const updateMembership = async (id, data) => {
-    try {
-      const price = Number(data.price);
-      const discountPercent = Number(data.discount) || 0;
-      const originalPrice = discountPercent > 0 
-        ? Math.round(price / (1 - (discountPercent / 100))) 
-        : price;
+ const updateMembership = async (id, payload) => {
+  try {
+    console.log("FINAL PUT PAYLOAD:", payload);
 
-      const payload = {
-        name: data.name,
-        originalPrice: originalPrice,
-        discountPrice: price,
-        benefits: data.benefits,
-        // icon: data.icon,
-        // minOrders: Number(data.minOrders),
-        // minSpend: Number(data.minSpend),
-        // discountPercent: discountPercent
-      };
-      
-      await membershipService.updateMembership(id, payload);
-      fetchMemberships();
-      toast.success("Membership tier updated successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Failed to update plan");
-      throw err;
-    }
-  };
+    await membershipService.updateMembership(id, payload);
+
+    fetchMemberships();
+    toast.success("Membership tier updated successfully!");
+  } catch (err) {
+    console.error(err);
+    toast.error(err.message || "Failed to update plan");
+    throw err;
+  }
+};
+
+
 
   const deleteMembership = async (id) => {
-    try {
-      await membershipService.deleteMembership(id);
-      fetchMemberships();
-      toast.success("Membership tier deleted successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete plan");
-      throw err;
-    }
-  };
+  if (!id) throw new Error("Membership ID is required");
+
+  try {
+    await membershipService.deleteMembership(id);
+    fetchMemberships();
+    toast.success("Membership tier deleted successfully!");
+  } catch (err) {
+    console.error("Delete API Error:", err);
+    toast.error(
+      err.response?.data?.message || "Failed to delete membership plan"
+    );
+    throw err;
+  }
+};
+
 
   return {
     memberships,
@@ -138,6 +87,6 @@ export function useApiMemberships() {
     refetch: fetchMemberships,
     createMembership,
     updateMembership,
-    deleteMembership
+    deleteMembership,
   };
 }
