@@ -302,7 +302,7 @@ export function Membership() {
                 <TableHead>DISCOUNT PRICE</TableHead>
                 <TableHead>DISCOUNT</TableHead>
                 <TableHead>BENEFITS</TableHead>
-                <TableHead className="text-right">ACTIONS</TableHead>
+                <TableHead>ACTIONS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -338,7 +338,7 @@ export function Membership() {
                         {plan.name}
                       </TableCell>
 
-                      <TableCell>{plan.durationDays}</TableCell>
+                      <TableCell>{plan.durationDays ?? plan.duration ?? "-"}</TableCell>
 
                       <TableCell className="line-through text-gray-400">
                         ₹{plan.originalPrice.toLocaleString()}
@@ -363,8 +363,8 @@ export function Membership() {
                         </ul>
                       </TableCell>
 
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                      <TableCell >
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
